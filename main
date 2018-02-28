@@ -1,0 +1,95 @@
+#!/bin/bash
+#PBS -k o
+#PBS -l nodes=1:ppn=4,walltime=5:00:00
+
+## modules
+echo "Loading modules"
+module unload matlab
+module load matlab/2017a
+module load spm/8
+module unload python
+module load dipy/dev
+echo "Finished loading modules"
+
+export PYTHONPATH=/N/u/brlife/git/nibabel:$PYTHONPATH
+
+echo "copying moving and static tractograms"
+static=`./jq -r '.tractogram_static' config.json`
+moving1=`./jq -r '.tractogram_moving1' config.json`
+moving2=`./jq -r '.tractogram_moving2' config.json`
+moving3=`./jq -r '.tractogram_moving3' config.json`
+moving4=`./jq -r '.tractogram_moving4' config.json`
+moving5=`./jq -r '.tractogram_moving5' config.json`
+subjID=`./jq -r '._inputs[0].meta.subject' config.json`
+cp $static ./;
+cp $moving1 ./;
+cp $moving2 ./;
+cp $moving3 ./;
+cp $moving4 ./;
+cp $moving5 ./;
+echo "Finished copying tractograms"
+
+# Check the inputs subject id
+echo "Check the inputs subject id"
+stat_life_id=`./jq -r '._inputs[0].meta.subject' config.json`
+stat_t1_id=`./jq -r '._inputs[1].meta.subject' config.json`
+mov_afq_id=`./jq -r '._inputs[2].meta.subject' config.json`
+mov_life_id=`./jq -r '._inputs[3].meta.subject' config.json`
+mov_t1_id=`./jq -r '._inputs[4].meta.subject' config.json`
+if [ $mov_life_id == $mov_t1_id -a $mov_life_id == $mov_afq_id -a $stat_life_id == $stat_t1_id ]; then
+	echo "Inputs subject id correctly inserted"
+else
+	echo "Inputs subject id incorrectly inserted. Check them again."
+	exit 1
+fi
+
+# Build LAP environment
+echo "Building LAP environment"
+if [ -f "linear_assignment.c" ];then
+	echo "LAP already built. Skipping"
+else
+	cython linear_assignment.pyx;
+	python setup_lapjv.py build_ext --inplace;
+
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "LAP environment build failed"
+		echo $ret > finished
+		exit $ret
+	fi
+fi
+
+# Tractogram Input converter
+echo "Input conversion to trk"
+if [ -f "life_static_output.trk" ];then
+	echo "Already in proper format. Skipping conversion"
+else
+	matlab -nosplash -nodisplay -r "lifeConverter5()";
+
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "Tractogram conversion failed"
+		echo $ret > finished
+		exit $ret
+	fi
+fi
+
+# Run LAP single example
+echo "Running LAP single example"
+if [ -f "tract.trk" ];then
+	echo "File exists. Complete"
+else
+	tract_name='./*tract.trk'
+	base_name=$(basename $tract_name)
+	run=`./jq -r '.run' config.json`
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out ${subjID}'_'$base_name'_'$run;
+
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "LAP single example failed"
+		echo $ret > finished
+		exit $ret
+	fi
+fi
+
+echo "Complete"
