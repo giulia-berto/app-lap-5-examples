@@ -80,9 +80,9 @@ if [ -f "tract.trk" ];then
 	echo "File exists. Complete"
 else
 	tract_name='./*tract.trk'
-	base_name=$(basename $tract_name)
+	base_name=$(basename $tract_name .trk)
 	run=`jq -r '.run' config.json`
-	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out ${subjID}'_'$base_name'_'$run;
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out ${subjID}'_'$base_name'_'$run'.trk';
 
 	ret=$?
 	if [ ! $ret -eq 0 ]; then
