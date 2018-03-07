@@ -114,6 +114,7 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 	static_tractogram = nib.streamlines.load(static_tractogram)
 
 	if extension == '.trk':
+		print("Saving bundle in %s" % out_filename)
 		aff_vox_to_ras = static_tractogram.affine
 		voxel_sizes = static_tractogram.header['voxel_sizes']
 		dimensions = static_tractogram.header['dimensions']
@@ -129,18 +130,17 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 
 		# Saving tractogram
 		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-		print("Saving tractogram in %s" % out_filename)
 		nib.streamlines.save(t, out_filename , header=hdr)
-		print("Tractogram saved in %s" % out_filename)
+		print("Bundle saved in %s" % out_filename)
 
 	elif extension == '.tck':
-		aff_vox_to_ras = static_tractogram.affine
+		print("Saving bundle in %s" % out_filename)
+		#aff_vox_to_ras = static_tractogram.affine
 		static_tractogram = static_tractogram.streamlines
 		estimated_bundle = static_tractogram[estimated_bundle_idx]
 
 		# Saving tractogram
 		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-		print("Saving bundle in %s" % out_filename)
 		nib.streamlines.save(t, out_filename)
 		print("Bundle saved in %s" % out_filename)
 

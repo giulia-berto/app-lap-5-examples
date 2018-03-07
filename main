@@ -82,7 +82,10 @@ else
 	tract_name='./*tract.trk'
 	base_name=$(basename $tract_name .trk)
 	run=`jq -r '.run' config.json`
-	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out ${subjID}'_'$base_name'_'$run'.trk';
+	output_filename=${subjID}'_'$base_name'_'$run'.tck'
+	array_filename='result_lap'
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out $output_filename;
+	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
 	ret=$?
 	if [ ! $ret -eq 0 ]; then

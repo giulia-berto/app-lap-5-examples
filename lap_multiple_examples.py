@@ -91,7 +91,6 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 			print("Tractogram saved in %s" % out_filename)
 
 		elif extension == '.tck':
-			aff_vox_to_ras = static_tractogram.affine
 			static_tractogram = static_tractogram.streamlines
 			estimated_bundle = static_tractogram[estimated_bundle_idx_ranked_med]
 
@@ -105,7 +104,7 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 			print("%s format not supported." % extension)	
 
 
-		return estimated_bundle
+		return estimated_bundle, result_lap
 
 
 if __name__ == '__main__':
@@ -123,6 +122,8 @@ if __name__ == '__main__':
 	                    help='The output estimated bundle filename')                   
 	args = parser.parse_args()
 
-	estimated_bundle = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+	estimated_bundle, result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+
+	np.save('result_lap', result_lap)
 
 	sys.exit()    
