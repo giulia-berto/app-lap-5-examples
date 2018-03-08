@@ -81,7 +81,7 @@ def show_tracts(estimated_target_tract, target_tract):
 def lap_single_example(moving_tractogram, static_tractogram, example):
 	"""Code for LAP from a single example.
 	"""
-	k = 1000
+	k = 500
 	distance_func = bundles_distances_mam
 
 	print("Computing the affine slr transformation.")
