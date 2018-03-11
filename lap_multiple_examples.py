@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 from nibabel.streamlines import load, save
 from tractograms_slr import tractograms_slr
-from lap_single_example import lap_single_example
+from lap_single_example import lap_single_example, save_bundle
 
 
 def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_target_tract_cost):
@@ -66,45 +66,10 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 
 		print("Extracting the estimated bundle...")
 		estimated_bundle_idx_ranked_med = estimated_bundle_idx_ranked[0:int(example_bundle_len_med)]
-		static_tractogram = nib.streamlines.load(static_tractogram)
+		
+		save_bundle(estimated_bundle_idx_ranked_med, static_tractogram, out_filename)
 
-		extension = os.path.splitext(out_filename)[1]
-
-		if extension == '.trk':
-			aff_vox_to_ras = static_tractogram.affine
-			voxel_sizes = static_tractogram.header['voxel_sizes']
-			dimensions = static_tractogram.header['dimensions']
-			static_tractogram = static_tractogram.streamlines
-			estimated_bundle = static_tractogram[estimated_bundle_idx_ranked_med]
-
-			# Creating header
-			hdr = nib.streamlines.trk.TrkFile.create_empty_header()
-			hdr['voxel_sizes'] = voxel_sizes
-			hdr['voxel_order'] = 'LAS'
-			hdr['dimensions'] = dimensions
-			hdr['voxel_to_rasmm'] = aff_vox_to_ras 
-
-			# Saving tractogram
-			t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-			print("Saving tractogram in %s" % out_filename)
-			nib.streamlines.save(t, out_filename , header=hdr)
-			print("Tractogram saved in %s" % out_filename)
-
-		elif extension == '.tck':
-			static_tractogram = static_tractogram.streamlines
-			estimated_bundle = static_tractogram[estimated_bundle_idx_ranked_med]
-
-			# Saving tractogram
-			t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-			print("Saving bundle in %s" % out_filename)
-			nib.streamlines.save(t, out_filename)
-			print("Bundle saved in %s" % out_filename)
-
-		else:
-			print("%s format not supported." % extension)	
-
-
-		return estimated_bundle, result_lap
+		return result_lap
 
 
 if __name__ == '__main__':
@@ -122,7 +87,7 @@ if __name__ == '__main__':
 	                    help='The output estimated bundle filename')                   
 	args = parser.parse_args()
 
-	estimated_bundle, result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
 
 	np.save('result_lap', result_lap)
 

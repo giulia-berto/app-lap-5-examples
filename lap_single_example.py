@@ -55,6 +55,7 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
     tractogram = np.array(tractogram, dtype=np.object)
     D, I = kdt.query(dm_source_tract, k=k)
     superset = np.unique(I.flat)
+    np.save('superset_idx', superset)
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
                                                              len(superset)))
     cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
@@ -112,15 +113,15 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 
 	extension = os.path.splitext(out_filename)[1]
 	static_tractogram = nib.streamlines.load(static_tractogram)
-
+	aff_vox_to_ras = static_tractogram.affine
+	voxel_sizes = static_tractogram.header['voxel_sizes']
+	dimensions = static_tractogram.header['dimensions']
+	static_tractogram = static_tractogram.streamlines
+	estimated_bundle = static_tractogram[estimated_bundle_idx]
+	
 	if extension == '.trk':
 		print("Saving bundle in %s" % out_filename)
-		aff_vox_to_ras = static_tractogram.affine
-		voxel_sizes = static_tractogram.header['voxel_sizes']
-		dimensions = static_tractogram.header['dimensions']
-		static_tractogram = static_tractogram.streamlines
-		estimated_bundle = static_tractogram[estimated_bundle_idx]
-
+		
 		# Creating header
 		hdr = nib.streamlines.trk.TrkFile.create_empty_header()
 		hdr['voxel_sizes'] = voxel_sizes
@@ -128,20 +129,24 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 		hdr['dimensions'] = dimensions
 		hdr['voxel_to_rasmm'] = aff_vox_to_ras 
 
-		# Saving tractogram
+		# Saving bundle
 		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-		nib.streamlines.save(t, out_filename , header=hdr)
+		nib.streamlines.save(t, out_filename, header=hdr)
 		print("Bundle saved in %s" % out_filename)
 
 	elif extension == '.tck':
 		print("Saving bundle in %s" % out_filename)
-		#aff_vox_to_ras = static_tractogram.affine
-		static_tractogram = static_tractogram.streamlines
-		estimated_bundle = static_tractogram[estimated_bundle_idx]
 
-		# Saving tractogram
+		# Creating header
+		hdr = nib.streamlines.tck.TckFile.create_empty_header()
+		hdr['voxel_sizes'] = voxel_sizes
+		hdr['voxel_order'] = 'LAS'
+		hdr['dimensions'] = dimensions
+		hdr['voxel_to_rasmm'] = aff_vox_to_ras
+
+		# Saving bundle
 		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
-		nib.streamlines.save(t, out_filename)
+		nib.streamlines.save(t, out_filename, header=hdr)
 		print("Bundle saved in %s" % out_filename)
 
 	else:
@@ -164,6 +169,8 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	result_lap = lap_single_example(args.moving, args.static, args.ex)
+
+	np.save('result_lap', result_lap)
 
 	if args.out:
 		estimated_bundle_idx = result_lap[0]
