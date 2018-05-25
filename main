@@ -14,19 +14,19 @@ echo "Finished loading modules"
 export PYTHONPATH=/N/u/brlife/git/nibabel:$PYTHONPATH
 
 echo "copying moving and static tractograms"
-static=`jq -r '.tractogram_static' config.json`
-moving1=`jq -r '.tractogram_moving1' config.json`
-moving2=`jq -r '.tractogram_moving2' config.json`
-moving3=`jq -r '.tractogram_moving3' config.json`
-moving4=`jq -r '.tractogram_moving4' config.json`
-moving5=`jq -r '.tractogram_moving5' config.json`
+static=`jq -r '.tractogram_static' config_multi.json`
+movings=`jq -r '.tractogram_moving1' config_multi.json`
+#moving2=`jq -r '.tractogram_moving2' config.json`
+#moving3=`jq -r '.tractogram_moving3' config.json`
+#moving4=`jq -r '.tractogram_moving4' config.json`
+#moving5=`jq -r '.tractogram_moving5' config.json`
 subjID=`jq -r '._inputs[0].meta.subject' config.json`
 cp $static ./;
-cp $moving1 ./;
-cp $moving2 ./;
-cp $moving3 ./;
-cp $moving4 ./;
-cp $moving5 ./;
+cp $movings ./;
+#cp $moving2 ./;
+#cp $moving3 ./;
+#cp $moving4 ./;
+#cp $moving5 ./;
 echo "Finished copying tractograms"
 
 # Check the inputs subject id
@@ -59,11 +59,35 @@ else
 	fi
 fi
 
+echo "Tractogram conversion to trk"
+if [ -f $mov_life_id'_track.tck' -a $stat_life_id'_track.tck' ];then
+	echo "Input in tck format. Convert it to trk."
+	mov_t1=`jq -r '.t1_moving' config.json`
+	stat_t1=`jq -r '.t1_static' config.json`
+	#python tck2trk.py $mov_t1 $mov_life_id'_track.tck';
+	#python tck2trk.py $stat_t1 $stat_life_id'_track.tck';
+    singularity exec docker://brainlife/dipy:0.14 "python ./tck2trk.py $mov_t1 ${mov_life_id}_track.tck && python ./tck2trk.py $stat_t1 ${stat_life_id}_track.tck"
+else
+	echo "Input in fe format. Convert it to trk."
+		for i in "${movings[@]}"
+		do
+			matlab -nosplash -nodisplay -r "lifeConverter1($fe, $ref_src)";
+    			#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
+			mv output.trk $mov_life_id'_track.trk';
+		done 
+	mv life_moving_output.trk $mov_life_id'_track.trk';
+	mv life_static_output.trk $stat_life_id'_track.trk';
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "Tractogram conversion failed"
+		echo $ret > finished
+		exit $ret
+	fi
+fi
+
 # Tractogram Input converter
 echo "Input conversion to trk"
-if [ -f "life_static_output.trk" ];then
-	echo "Already in proper format. Skipping conversion"
-else
+
 	matlab -nosplash -nodisplay -r "lifeConverter5()";
 
 	ret=$?
