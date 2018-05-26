@@ -14,34 +14,43 @@ echo "Finished loading modules"
 export PYTHONPATH=/N/u/brlife/git/nibabel:$PYTHONPATH
 
 echo "copying moving and static tractograms"
-static=`jq -r '.tractogram_static' config_multi.json`
-movings=`jq -r '.tractogram_moving1' config_multi.json`
-#moving2=`jq -r '.tractogram_moving2' config.json`
-#moving3=`jq -r '.tractogram_moving3' config.json`
-#moving4=`jq -r '.tractogram_moving4' config.json`
-#moving5=`jq -r '.tractogram_moving5' config.json`
 subjID=`jq -r '._inputs[0].meta.subject' config.json`
+static=`jq -r '.tractogram_static' config.json`
+t1_static=`jq -r '.t1_static' config.json`
+segmentations=`jq -r '.segmentations' config.json`
+movings=`jq -r '.tractograms_moving' config.json`
+t1s=`jq -r '.t1s_moving' config.json`
+
 cp $static ./;
 cp $movings ./;
-#cp $moving2 ./;
-#cp $moving3 ./;
-#cp $moving4 ./;
-#cp $moving5 ./;
-echo "Finished copying tractograms"
 
-# Check the inputs subject id
+# Building arrays
+arr_seg=()
+arr_seg+=(${segmentations})
+arr_mov=()
+arr_mov+=(${movings})
+arr_t1s=()
+arr_t1s+=(${t1s})
+
 echo "Check the inputs subject id"
-stat_life_id=`jq -r '._inputs[0].meta.subject' config.json`
-stat_t1_id=`jq -r '._inputs[1].meta.subject' config.json`
-mov_afq_id=`jq -r '._inputs[2].meta.subject' config.json`
-mov_life_id=`jq -r '._inputs[3].meta.subject' config.json`
-mov_t1_id=`jq -r '._inputs[4].meta.subject' config.json`
-if [ $mov_life_id == $mov_t1_id -a $mov_life_id == $mov_afq_id -a $stat_life_id == $stat_t1_id ]; then
+num_ex=$((${#arr_seg[@]} - 2))
+if [ ! $subjID == `jq -r '._inputs[1].meta.subject' config.json` ]; then
+echo "Inputs subject id incorrectly inserted. Check them again."
+	exit 1
+fi
+for i in `seq 1 $num_ex`; 
+do 
+	id_seg=$(jq -r "._inputs[2+$i].meta.subject" config.json | tr -d "_")
+	id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")
+	id_t1=$(jq -r "._inputs[2+$i+$num_ex+$num_ex].meta.subject" config.json | tr -d "_")	
+	if [ $id_seg == $id_mov -a $id_seg == $id_t1 ]; then
 	echo "Inputs subject id correctly inserted"
 else
 	echo "Inputs subject id incorrectly inserted. Check them again."
 	exit 1
 fi
+done
+
 
 # Build LAP environment
 echo "Building LAP environment"
@@ -60,30 +69,31 @@ else
 fi
 
 echo "Tractogram conversion to trk"
-if [ -f $mov_life_id'_track.tck' -a $stat_life_id'_track.tck' ];then
+mkdir tractogram_directory;
+if [ -f "${arr_mov[1]%?}" == "*.tck" ];then
 	echo "Input in tck format. Convert it to trk."
-	mov_t1=`jq -r '.t1_moving' config.json`
-	stat_t1=`jq -r '.t1_static' config.json`
-	#python tck2trk.py $mov_t1 $mov_life_id'_track.tck';
-	#python tck2trk.py $stat_t1 $stat_life_id'_track.tck';
-    singularity exec docker://brainlife/dipy:0.14 "python ./tck2trk.py $mov_t1 ${mov_life_id}_track.tck && python ./tck2trk.py $stat_t1 ${stat_life_id}_track.tck"
+	for i in `seq 1 $num_ex`; 
+	do 
+		t1_moving=${arr_t1s[i]%?}
+		id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		python tck2trk.py $t1_moving ${arr_mov[i]%?};
+		mv *.trk tractogram_directory/$id_mov'_track.trk';
+		python tck2trk.py $t1_static ${arr_mov[i]%?};
+		mv *.trk $subjID'_track.trk';
+    		#singularity exec docker://brainlife/dipy:0.14 "python ./tck2trk.py $mov_t1 ${mov_life_id}_track.tck && python ./tck2trk.py $stat_t1 ${stat_life_id}_track.tck"
+	done
 else
 	echo "Input in fe format. Convert it to trk."
-		for i in "${movings[@]}"
-		do
-			matlab -nosplash -nodisplay -r "lifeConverter1($fe, $ref_src)";
-    			#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
-			mv output.trk $mov_life_id'_track.trk';
-		done 
-	mv life_moving_output.trk $mov_life_id'_track.trk';
-	mv life_static_output.trk $stat_life_id'_track.trk';
-	ret=$?
-	if [ ! $ret -eq 0 ]; then
-		echo "Tractogram conversion failed"
-		echo $ret > finished
-		exit $ret
-	fi
+	for i in `seq 1 $num_ex`; 
+	do
+		id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+		matlab -nosplash -nodisplay -r "lifeConverter1(${arr_mov[i]%?}, ${arr_t1s[i]%?})";
+    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
+		mv output.trk tractogram_directory/$id_mov'_track.trk';
+	done 
 fi
+
+
 
 # Tractogram Input converter
 echo "Input conversion to trk"
@@ -98,8 +108,8 @@ echo "Input conversion to trk"
 	fi
 fi
 
-# Run LAP single example
-echo "Running LAP single example"
+# Run LAP multi example
+echo "Running LAP multi example"
 if [ -f "tract.trk" ];then
 	echo "File exists. Complete"
 else
