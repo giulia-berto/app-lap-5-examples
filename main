@@ -21,8 +21,8 @@ segmentations=`jq -r '.segmentations' config.json`
 movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
 
-cp $static ./;
-cp $movings ./;
+#cp $static ./;
+#cp $movings ./;
 
 # Building arrays
 arr_seg=()
@@ -36,18 +36,18 @@ echo "Check the inputs subject id"
 num_ex=$((${#arr_seg[@]} - 2))
 if [ ! $subjID == `jq -r '._inputs[1].meta.subject' config.json` ]; then
 echo "Inputs subject id incorrectly inserted. Check them again."
-	exit 1
+	#exit 1
 fi
 for i in `seq 1 $num_ex`; 
 do 
-	id_seg=$(jq -r "._inputs[2+$i].meta.subject" config.json | tr -d "_")
-	id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")
-	id_t1=$(jq -r "._inputs[2+$i+$num_ex+$num_ex].meta.subject" config.json | tr -d "_")	
+	id_seg=$(jq -r "._inputs[1+$i].meta.subject" config.json | tr -d "_")
+	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+	id_t1=$(jq -r "._inputs[1+$i+$num_ex+$num_ex].meta.subject" config.json | tr -d "_")	
 	if [ $id_seg == $id_mov -a $id_seg == $id_t1 ]; then
 	echo "Inputs subject id correctly inserted"
 else
 	echo "Inputs subject id incorrectly inserted. Check them again."
-	exit 1
+	#exit 1
 fi
 done
 
@@ -64,18 +64,18 @@ else
 	if [ ! $ret -eq 0 ]; then
 		echo "LAP environment build failed"
 		echo $ret > finished
-		exit $ret
+		#exit $ret
 	fi
 fi
 
 echo "Tractogram conversion to trk"
-mkdir tractogram_directory;
+mkdir tractograms_directory;
 if [ -f "${arr_mov[1]%?}" == "*.tck" ];then
 	echo "Input in tck format. Convert it to trk."
 	for i in `seq 1 $num_ex`; 
 	do 
 		t1_moving=${arr_t1s[i]%?}
-		id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
 		python tck2trk.py $t1_moving ${arr_mov[i]%?};
 		mv *.trk tractogram_directory/$id_mov'_track.trk';
 		python tck2trk.py $t1_static ${arr_mov[i]%?};
@@ -84,41 +84,37 @@ if [ -f "${arr_mov[1]%?}" == "*.tck" ];then
 	done
 else
 	echo "Input in fe format. Convert it to trk."
+	matlab -nosplash -nodisplay -r "lifeConverterMulti('$static', '$t1_static')";
+	mv output.trk $subjID'_track.trk';
 	for i in `seq 1 $num_ex`; 
 	do
-		id_mov=$(jq -r "._inputs[2+$i+$num_ex].meta.subject" config.json | tr -d "_")		
-		matlab -nosplash -nodisplay -r "lifeConverter1(${arr_mov[i]%?}, ${arr_t1s[i]%?})";
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]%?}, ${arr_t1s[i]%?})";
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
-		mv output.trk tractogram_directory/$id_mov'_track.trk';
+		mv output.trk tractograms_directory/$id_mov'_track.trk';
 	done 
 fi
 
 
-
-# Tractogram Input converter
-echo "Input conversion to trk"
-
-	matlab -nosplash -nodisplay -r "lifeConverter5()";
-
-	ret=$?
-	if [ ! $ret -eq 0 ]; then
-		echo "Tractogram conversion failed"
-		echo $ret > finished
-		exit $ret
-	fi
-fi
+echo "AFQ conversion to trk"
+mkdir examples_directory;
+for i in `seq 1 $num_ex`; 
+	do
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+		matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]%?}, ${arr_t1s[i]%?})";
+    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
+		mv *.trk examples_directory/;
+	done
 
 # Run LAP multi example
 echo "Running LAP multi example"
-if [ -f "tract.trk" ];then
-	echo "File exists. Complete"
-else
+
 	tract_name='./*tract.trk'
 	base_name=$(basename $tract_name .trk)
 	run=`jq -r '.run' config.json`
 	output_filename=${subjID}'_'$base_name'_'$run'.tck'
 	array_filename='result_lap'
-	python lap_multiple_examples.py -moving_dir tractograms_directory -static life_static_output.trk -ex_dir examples_directory -out $output_filename;
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory -out $output_filename;
 	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
 	ret=$?
@@ -127,6 +123,6 @@ else
 		echo $ret > finished
 		exit $ret
 	fi
-fi
+
 
 echo "Complete"
