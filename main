@@ -21,9 +21,6 @@ segmentations=`jq -r '.segmentations' config.json`
 movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
 
-#cp $static ./;
-#cp $movings ./;
-
 # Building arrays
 arr_seg=()
 arr_seg+=(${segmentations})
@@ -36,7 +33,7 @@ echo "Check the inputs subject id"
 num_ex=$((${#arr_seg[@]} - 2))
 if [ ! $subjID == `jq -r '._inputs[1].meta.subject' config.json` ]; then
 echo "Inputs subject id incorrectly inserted. Check them again."
-	#exit 1
+	exit 1
 fi
 for i in `seq 1 $num_ex`; 
 do 
@@ -47,7 +44,7 @@ do
 	echo "Inputs subject id correctly inserted"
 else
 	echo "Inputs subject id incorrectly inserted. Check them again."
-	#exit 1
+	exit 1
 fi
 done
 
@@ -64,7 +61,7 @@ else
 	if [ ! $ret -eq 0 ]; then
 		echo "LAP environment build failed"
 		echo $ret > finished
-		#exit $ret
+		exit $ret
 	fi
 fi
 
