@@ -92,6 +92,13 @@ else
 	done 
 fi
 
+if [ -z "tractograms_directory" ]; then    
+	echo "tractograms_directory is empty."; 
+	exit 1;
+else    
+	echo "tractograms_directory created."; 
+fi
+
 
 echo "AFQ conversion to trk"
 mkdir examples_directory;
@@ -102,6 +109,13 @@ for i in `seq 1 $num_ex`;
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
 		mv *.trk examples_directory/;
 	done
+
+if [ -z "examples_directory" ]; then    
+	echo "examples_directory is empty."; 
+	exit 1;
+else    
+	echo "examples_directory created."; 
+fi
 
 # Run LAP multi example
 echo "Running LAP multi example"
@@ -120,6 +134,5 @@ echo "Running LAP multi example"
 		echo $ret > finished
 		exit $ret
 	fi
-
 
 echo "Complete"
