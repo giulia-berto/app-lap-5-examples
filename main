@@ -49,7 +49,6 @@ fi
 done
 
 
-# Build LAP environment
 echo "Building LAP environment"
 if [ -f "linear_assignment.c" ];then
 	echo "LAP already built. Skipping"
@@ -67,17 +66,18 @@ fi
 
 echo "Tractogram conversion to trk"
 mkdir tractograms_directory;
-if [ -f "${arr_mov[1]%?}" == "*.tck" ];then
+if [ -f "${arr_mov[1]//,}" == "*.tck" ];then
 	echo "Input in tck format. Convert it to trk."
+	python tck2trk.py $t1_static $static;
+	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
+	mv *.trk $subjID'_track.trk';
 	for i in `seq 1 $num_ex`; 
 	do 
-		t1_moving=${arr_t1s[i]%?}
+		t1_moving=${arr_t1s[i]//,}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
 		python tck2trk.py $t1_moving ${arr_mov[i]//,};
 		mv *.trk tractogram_directory/$id_mov'_track.trk';
-		python tck2trk.py $t1_static ${arr_mov[i]//,};
-		mv *.trk $subjID'_track.trk';
-    		#singularity exec docker://brainlife/dipy:0.14 "python ./tck2trk.py $mov_t1 ${mov_life_id}_track.tck && python ./tck2trk.py $stat_t1 ${stat_life_id}_track.tck"
+    		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving ${arr_mov[i]//,} 
 	done
 else
 	echo "Input in fe format. Convert it to trk."
@@ -87,7 +87,7 @@ else
 	do
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
 		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
-    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
+    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverterMulti ${arr_mov[i]//,} ${arr_t1s[i]//,}
 		mv output.trk tractograms_directory/$id_mov'_track.trk';
 	done 
 fi
@@ -102,13 +102,17 @@ fi
 
 echo "AFQ conversion to trk"
 mkdir examples_directory;
+
 for i in `seq 1 $num_ex`; 
-	do
-		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
-		matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
-    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
-		mv *.trk examples_directory/;
-	done
+do
+	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
+    	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
+	while read tract_name; do
+		echo "Tract name: $tract_name";
+		mv $tract_name'_tract.trk' examples_directory/$id_mov'_'$tract_name'_tract.trk';
+	done < tract_name_list.txt
+done
 
 if [ -z "examples_directory" ]; then    
 	echo "examples_directory is empty."; 
@@ -117,15 +121,16 @@ else
 	echo "examples_directory created."; 
 fi
 
-# Run LAP multi example
-echo "Running LAP multi example"
 
-	tract_name='./*tract.trk'
-	base_name=$(basename $tract_name .trk)
+echo "Running LAP multi example"
+while read tract_name; do
+	echo "Tract name: $tract_name"; 
+	base_name=$tract_name'_tract'
 	run=`jq -r '.run' config.json`
 	output_filename=${subjID}'_'$base_name'_'$run'.tck'
 	array_filename='result_lap'
 	python lap_multiple_examples.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory -out $output_filename;
+	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
 	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
 	ret=$?
@@ -134,5 +139,7 @@ echo "Running LAP multi example"
 		echo $ret > finished
 		exit $ret
 	fi
+done < tract_name_list.txt
+
 
 echo "Complete"
