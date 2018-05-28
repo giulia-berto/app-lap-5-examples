@@ -73,9 +73,9 @@ if [ -f "${arr_mov[1]%?}" == "*.tck" ];then
 	do 
 		t1_moving=${arr_t1s[i]%?}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		python tck2trk.py $t1_moving ${arr_mov[i]%?};
+		python tck2trk.py $t1_moving ${arr_mov[i]//,};
 		mv *.trk tractogram_directory/$id_mov'_track.trk';
-		python tck2trk.py $t1_static ${arr_mov[i]%?};
+		python tck2trk.py $t1_static ${arr_mov[i]//,};
 		mv *.trk $subjID'_track.trk';
     		#singularity exec docker://brainlife/dipy:0.14 "python ./tck2trk.py $mov_t1 ${mov_life_id}_track.tck && python ./tck2trk.py $stat_t1 ${stat_life_id}_track.tck"
 	done
@@ -86,7 +86,7 @@ else
 	for i in `seq 1 $num_ex`; 
 	do
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
-		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]%?}, ${arr_t1s[i]%?})";
+		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
 		mv output.trk tractograms_directory/$id_mov'_track.trk';
 	done 
@@ -105,7 +105,7 @@ mkdir examples_directory;
 for i in `seq 1 $num_ex`; 
 	do
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
-		matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]%?}, ${arr_t1s[i]%?})";
+		matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverter1 $fe $ref_src
 		mv *.trk examples_directory/;
 	done
