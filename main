@@ -76,7 +76,7 @@ if [[ $static == *.tck ]];then
 	do 
 		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		mv $t1_moving ./tractogram_moving;
+		mv ${arr_mov[i]//[,\"]} ./tractogram_moving;
 		python tck2trk.py $t1_moving tractogram_moving;
 		mv *.trk tractograms_directory/$id_mov'_track.trk';
     		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
@@ -103,7 +103,7 @@ fi
 
 
 echo "AFQ conversion to trk"
-mkdir examples_directory;
+#mkdir examples_directory;
 
 for i in `seq 1 $num_ex`; 
 do
@@ -111,17 +111,19 @@ do
 	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
     	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
 	while read tract_name; do
+		mkdir examples_directory_$tract_name;
 		echo "Tract name: $tract_name";
-		mv $tract_name'_tract.trk' examples_directory/$id_mov'_'$tract_name'_tract.trk';
+		mv $tract_name'_tract.trk' examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk';
+
+		if [ -s "examples_directory_$tract_name" ]; then    
+		echo "examples_directory is empty."; 
+			exit 1;
+		else    
+			echo "examples_directory created."; 
+		fi	
 	done < tract_name_list.txt
 done
 
-if [ -z "examples_directory" ]; then    
-	echo "examples_directory is empty."; 
-	exit 1;
-else    
-	echo "examples_directory created."; 
-fi
 
 
 echo "Running LAP multi example"
@@ -131,7 +133,7 @@ while read tract_name; do
 	run=`jq -r '.run' config.json`
 	output_filename=${subjID}'_'$base_name'_'$run'.tck'
 	array_filename='result_lap'
-	python lap_multiple_examples.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory -out $output_filename;
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
 	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
 	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
