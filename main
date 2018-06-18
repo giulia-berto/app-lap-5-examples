@@ -111,7 +111,9 @@ do
 	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
     	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
 	while read tract_name; do
-		mkdir examples_directory_$tract_name;
+		if [ ! -d "examples_directory_$tract_name" ]; then
+  		mkdir examples_directory_$tract_name;
+		fi
 		echo "Tract name: $tract_name";
 		mv $tract_name'_tract.trk' examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk';
 
