@@ -76,8 +76,8 @@ if [[ $static == *.tck ]];then
 	do 
 		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		mv ${arr_mov[i]//[,\"]} ./tractogram_moving;
-		python tck2trk.py $t1_moving tractogram_moving;
+		mv ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving;
+		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving;
 		mv *.trk tractograms_directory/$id_mov'_track.trk';
     		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
 	done
