@@ -68,16 +68,16 @@ echo "Tractogram conversion to trk"
 mkdir tractograms_directory;
 if [[ $static == *.tck ]];then
 	echo "Input in tck format. Convert it to trk."
-	mv $static ./tractogram_static;
-	python tck2trk.py $t1_static tractogram_static;
+	mv $static ./tractogram_static.tck;
+	python tck2trk.py $t1_static tractogram_static.tck;
 	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
 	mv *.trk $subjID'_track.trk';
 	for i in `seq 1 $num_ex`; 
 	do 
 		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		mv ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving;
-		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving;
+		mv ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
+		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
 		mv *.trk tractograms_directory/$id_mov'_track.trk';
     		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
 	done
