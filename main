@@ -94,7 +94,7 @@ else
 	done 
 fi
 
-if [ -z "tractograms_directory" ]; then    
+if [ -z "$(ls -A -- "tractograms_directory")" ]; then    
 	echo "tractograms_directory is empty."; 
 	exit 1;
 else    
@@ -117,7 +117,7 @@ do
 		echo "Tract name: $tract_name";
 		mv $tract_name'_tract.trk' examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk';
 
-		if [ -s "examples_directory_$tract_name" ]; then    
+		if [ -z "$(ls -A -- "examples_directory_$tract_name")" ]; then    
 		echo "examples_directory is empty."; 
 			exit 1;
 		else    
