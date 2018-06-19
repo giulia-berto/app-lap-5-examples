@@ -10,6 +10,8 @@ import argparse
 import os.path
 import nibabel as nib
 import numpy as np
+import pickle
+from os.path import isfile
 from nibabel.streamlines import load
 from tractograms_slr import tractograms_slr
 from dipy.tracking.streamline import apply_affine
@@ -96,7 +98,17 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
 	static_tractogram = nib.streamlines.load(static_tractogram)
 	static_tractogram = static_tractogram.streamlines
-	kdt, prototypes = compute_kdtree_and_dr_tractogram(static_tractogram)
+	if isfile('prototypes.npy') & isfile('kdt'):
+		print("Retrieving past results for kdt and prototypes.")
+		kdt_filename='kdt'
+		kdt = pickle.load(open(kdt_filename))
+		prototypes = np.load('prototypes.npy')
+	else:
+		kdt, prototypes = compute_kdtree_and_dr_tractogram(static_tractogram)
+		#Saving files
+		kdt_filename='kdt'
+		pickle.dump(kdt, open(kdt_filename, 'w'), protocol=pickle.HIGHEST_PROTOCOL)
+		np.save('prototypes', prototypes)
 
 	print("Compute the dissimilarity of the aligned example bundle with the prototypes of target tractogram.")
 	example_bundle_aligned = np.array(example_bundle_aligned, dtype=np.object)
