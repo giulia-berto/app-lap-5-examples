@@ -15,7 +15,7 @@ tline = fgetl(fid);
 
 while ischar(tline)
     disp(tline);
-    tck_filename = strcat('tracts_tck/',stat_sub,'_',tline,'_tract_E',mov_sub,'.tck');
+    tck_filename = strcat('tracts_tck/',stat_sub,'_',tline,'_tract_',mov_sub,'.tck');
     fg_classified = dtiImportFibersMrtrix(tck_filename, 1);
     fgWrite(fg_classified, tline, 'mat');
     tline = fgetl(fid);
