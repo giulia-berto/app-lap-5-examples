@@ -33,6 +33,7 @@ echo "Check the inputs subject id"
 num_ex=$((${#arr_seg[@]} - 2))
 
 echo "Build a wmc structure"
+run=`jq -r '.run' config.json`
 stat_sub=\'$subjID\'
 mov_sub=\'$run\'
 matlab -nosplash -nodisplay -r "build_wmc_structure($stat_sub, $mov_sub)";
