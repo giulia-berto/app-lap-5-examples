@@ -163,7 +163,7 @@ fi
 echo "Build a wmc structure"
 stat_sub=\'$subjID\'
 mov_sub=\'$run\'
-matlab -nosplash -nodisplay -r "build_wmc_structure($stat_sub, $run)";
+matlab -nosplash -nodisplay -r "build_wmc_structure($stat_sub, $mov_sub)";
 #singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/build_wmc_structure $subjID $mov_afq_id
 if [ -f 'output.mat' ]; then 
     echo "WMC structure created."
