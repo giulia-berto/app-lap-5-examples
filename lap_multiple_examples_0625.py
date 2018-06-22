@@ -11,8 +11,8 @@ import os.path
 import nibabel as nib
 import numpy as np
 from nibabel.streamlines import load, save
-from tractograms_slr import tractograms_slr
-from lap_single_example import lap_single_example, save_bundle
+from tractograms_slr_0625 import tractograms_slr
+from lap_single_example_0625 import lap_single_example, save_bundle
 
 
 def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_target_tract_cost):

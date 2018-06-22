@@ -13,7 +13,7 @@ import numpy as np
 import pickle
 from os.path import isfile
 from nibabel.streamlines import load
-from tractograms_slr import tractograms_slr
+from tractograms_slr_0625 import tractograms_slr
 from dipy.tracking.streamline import apply_affine
 from dipy.tracking.streamline import set_number_of_points
 from dissimilarity import compute_dissimilarity, dissimilarity
