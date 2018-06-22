@@ -53,7 +53,7 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 		for i in range(nt):
 			moving_tractogram = '%s/%s' %(moving_tractograms_dir, moving_tractograms[i])
 			example = '%s/%s' %(ex_dir, examples[i])
-			tmp = np.array([lap_single_example_0625(moving_tractogram, static_tractogram, example)])
+			tmp = np.array([lap_single_example(moving_tractogram, static_tractogram, example)])
 			result_lap.append(tmp)
 
 		result_lap = np.array(result_lap)
