@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -k o
-#PBS -l nodes=1:ppn=8,walltime=00:30:00
+#PBS -l nodes=1:ppn=16,walltime=40:00:00
 
 ## modules
 echo "Loading modules"
@@ -20,6 +20,7 @@ t1_static=`jq -r '.t1_static' config.json`
 segmentations=`jq -r '.segmentations' config.json`
 movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
+run=`jq -r '.run' config.json`
 
 # Building arrays
 arr_seg=()
@@ -31,9 +32,135 @@ arr_t1s+=(${t1s})
 
 echo "Check the inputs subject id"
 num_ex=$((${#arr_seg[@]} - 2))
+if [ ! $subjID == `jq -r '._inputs[1].meta.subject' config.json` ]; then
+echo "Inputs subject id incorrectly inserted. Check them again."
+	exit 1
+fi
+for i in `seq 1 $num_ex`; 
+do 
+	id_seg=$(jq -r "._inputs[1+$i].meta.subject" config.json | tr -d "_")
+	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+	id_t1=$(jq -r "._inputs[1+$i+$num_ex+$num_ex].meta.subject" config.json | tr -d "_")	
+	if [ $id_seg == $id_mov -a $id_seg == $id_t1 ]; then
+	echo "Inputs subject id correctly inserted"
+else
+	echo "Inputs subject id incorrectly inserted. Check them again."
+	exit 1
+fi
+done
+
+
+echo "Building LAP environment"
+if [ -f "linear_assignment.c" ];then
+	echo "LAP already built. Skipping"
+else
+	cython linear_assignment.pyx;
+	python setup_lapjv.py build_ext --inplace;
+
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "LAP environment build failed"
+		echo $ret > finished
+		exit $ret
+	fi
+fi
+
+echo "Tractogram conversion to trk"
+mkdir tractograms_directory;
+if [[ $static == *.tck ]];then
+	echo "Input in tck format. Convert it to trk."
+	mv $static ./tractogram_static.tck;
+	python tck2trk.py $t1_static tractogram_static.tck;
+	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
+	mv tractogram_static.trk $subjID'_track.trk';
+	for i in `seq 1 $num_ex`; 
+	do 
+		t1_moving=${arr_t1s[i]//[,\"]}
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		mv ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
+		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
+		mv ${id_mov}_tractogram_moving.trk tractograms_directory/$id_mov'_track.trk';
+    		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
+	done
+else
+	echo "Input in fe format. Convert it to trk."
+	matlab -nosplash -nodisplay -r "lifeConverterMulti('$static', '$t1_static')";
+	mv output.trk $subjID'_track.trk';
+	for i in `seq 1 $num_ex`; 
+	do
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
+    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverterMulti ${arr_mov[i]//,} ${arr_t1s[i]//,}
+		mv output.trk tractograms_directory/$id_mov'_track.trk';
+	done 
+fi
+
+if [ -z "$(ls -A -- "tractograms_directory")" ]; then    
+	echo "tractograms_directory is empty."; 
+	exit 1;
+else    
+	echo "tractograms_directory created."; 
+fi
+
+
+echo "AFQ conversion to trk"
+#mkdir examples_directory;
+
+for i in `seq 1 $num_ex`; 
+do
+	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
+	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
+    	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
+	while read tract_name; do
+		if [ ! -d "examples_directory_$tract_name" ]; then
+  		mkdir examples_directory_$tract_name;
+		fi
+		echo "Tract name: $tract_name";
+		mv $tract_name'_tract.trk' examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk';
+
+		if [ -z "$(ls -A -- "examples_directory_$tract_name")" ]; then    
+		echo "examples_directory is empty."; 
+			exit 1;
+		else    
+			echo "examples_directory created."; 
+		fi	
+	done < tract_name_list.txt
+done
+
+
+
+echo "Running LAP multi example"
+mkdir tracts_tck;
+while read tract_name; do
+	echo "Tract name: $tract_name"; 
+	base_name=$tract_name'_tract'
+	output_filename=tracts_tck/${subjID}'_'$base_name'_'$run'.tck'
+	array_filename='result_lap'
+	python lap_multiple_examples.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
+	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
+	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+
+	ret=$?
+	if [ ! $ret -eq 0 ]; then
+		echo "LAP single example failed"
+		echo $ret > finished
+		exit $ret
+	fi
+done < tract_name_list.txt
+
+
+echo "Build partial tractogram"
+output_filename=${subjID}'_var-partial_tract_E'${run}'.tck';
+python build_partial_tractogram.py -tracts_tck_dir 'tracts_tck' -out ${output_filename};
+#singularity exec -e docker://brainlife/dipy:0.14 python ./build_partial_tractogram.py -tracts_tck_dir tracts_tck -out $output_filename
+if [ -f ${output_filename} ]; then 
+    echo "Partial tractogram built."
+else 
+	echo "Partial tractogram missing."
+	exit 1
+fi
 
 echo "Build a wmc structure"
-run=`jq -r '.run' config.json`
 stat_sub=\'$subjID\'
 mov_sub=\'$run\'
 matlab -nosplash -nodisplay -r "build_wmc_structure($stat_sub, $mov_sub)";
