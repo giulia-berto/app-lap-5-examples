@@ -90,7 +90,7 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	step_size = 0.625
 
 	print("Computing the affine slr transformation.")
-	affine = tractograms_slr_0625(moving_tractogram, static_tractogram)
+	affine = tractograms_slr(moving_tractogram, static_tractogram)
 
 	print("Applying the affine to the example bundle.")
 	example_bundle = nib.streamlines.load(example)
