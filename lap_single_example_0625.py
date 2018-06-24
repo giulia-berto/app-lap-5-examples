@@ -129,7 +129,6 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 
 	print("Segmentation as Rectangular linear Assignment Problem (RLAP).")
 	estimated_bundle_idx, min_cost_values = RLAP(kdt, k, dm_example_bundle_aligned, example_bundle_aligned, static_tractogram, distance_func)
-	estimated_bundle = static_tractogram[estimated_bundle_idx]
 
 	return estimated_bundle_idx, min_cost_values, len(example_bundle)
 
@@ -149,6 +148,7 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 		tmp = set_number_of_points(f, nb_res_points)
 		static_tractogram_res.append(tmp)	
 	static_tractogram = static_tractogram_res
+	static_tractogram = np.array(static_tractogram, dtype=np.object)
 	estimated_bundle = static_tractogram[estimated_bundle_idx]
 	
 	if extension == '.trk':
