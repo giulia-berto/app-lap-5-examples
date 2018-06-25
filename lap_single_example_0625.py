@@ -18,6 +18,7 @@ from dipy.tracking.streamline import apply_affine
 from dipy.tracking.streamline import set_number_of_points
 from dissimilarity import compute_dissimilarity, dissimilarity
 from dipy.tracking.distances import bundles_distances_mam
+from dipy.metric import length
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
 
@@ -27,6 +28,18 @@ except ImportError:
     print("WARNING: Cythonized LAPJV not available. Falling back to Python.")
     print("WARNING: See README.txt")
     from linear_assignment_numpy import LinearAssignment
+
+
+def resample_tractogram(tractogram, step_size):
+    """Resample the tractogram with the given step size.
+    """
+    lengths=list(length(tractogram))
+    tractogram_res = []
+    for i, f in enumerate(tractogram):
+	nb_res_points = np.int(np.floor(lengths[i]/step_size))
+	tmp = set_number_of_points(f, nb_res_points)
+	tractogram_res.append(tmp)
+    return tractogram_res
 
 
 def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
@@ -87,7 +100,6 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	"""
 	k = 500
 	distance_func = bundles_distances_mam
-	step_size = 0.625
 
 	print("Computing the affine slr transformation.")
 	affine = tractograms_slr(moving_tractogram, static_tractogram)
@@ -95,21 +107,13 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	print("Applying the affine to the example bundle.")
 	example_bundle = nib.streamlines.load(example)
 	example_bundle = example_bundle.streamlines
-	example_bundle_res = []
-	for f in example_bundle:
-		nb_res_points = np.int(np.floor(len(f)/step_size)) 
-		tmp = set_number_of_points(f, nb_res_points)
-		example_bundle_res.append(tmp)
+	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
 	example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
 	
 	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
 	static_tractogram = nib.streamlines.load(static_tractogram)
 	static_tractogram = static_tractogram.streamlines
-	static_tractogram_res = []
-	for f in static_tractogram:
-		nb_res_points = np.int(np.floor(len(f)/step_size))
-		tmp = set_number_of_points(f, nb_res_points)
-		static_tractogram_res.append(tmp)	
+	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
 	static_tractogram = static_tractogram_res
 	if isfile('prototypes.npy') & isfile('kdt'):
 		print("Retrieving past results for kdt and prototypes.")
@@ -141,14 +145,8 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 	voxel_sizes = static_tractogram.header['voxel_sizes']
 	dimensions = static_tractogram.header['dimensions']
 	static_tractogram = static_tractogram.streamlines
-	step_size = 0.625
-	static_tractogram_res = []
-	for f in static_tractogram:
-		nb_res_points = np.int(np.floor(len(f)/step_size))
-		tmp = set_number_of_points(f, nb_res_points)
-		static_tractogram_res.append(tmp)	
-	static_tractogram = static_tractogram_res
-	static_tractogram = np.array(static_tractogram, dtype=np.object)
+	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)
+	static_tractogram = np.array(static_tractogram_res, dtype=np.object)
 	estimated_bundle = static_tractogram[estimated_bundle_idx]
 	
 	if extension == '.trk':

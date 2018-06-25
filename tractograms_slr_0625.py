@@ -18,6 +18,19 @@ from nibabel.streamlines import load
 from dipy.segment.clustering import QuickBundles
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import set_number_of_points
+from dipy.metric import length
+
+
+def resample_tractogram(tractogram, step_size):
+    """Resample the tractogram with the given step size.
+    """
+    lengths=list(length(tractogram))
+    tractogram_res = []
+    for i, f in enumerate(tractogram):
+	nb_res_points = np.int(np.floor(lengths[i]/step_size))
+	tmp = set_number_of_points(f, nb_res_points)
+	tractogram_res.append(tmp)
+    return tractogram_res
 
 
 def tractograms_slr(moving_tractogram, static_tractogram):
@@ -45,19 +58,10 @@ def tractograms_slr(moving_tractogram, static_tractogram):
 		static_tractogram = static_tractogram.streamlines     
 
 		print("Resampling tractograms with step size = 0.625 mm") 
-		step_size = 0.625
-		moving_tractogram_res = []
-		static_tractogram_res = []
-		for f in moving_tractogram:
-		    nb_res_points = np.int(np.floor(len(f)/step_size)) 
-		    tmp = set_number_of_points(f, nb_res_points)
-		    moving_tractogram_res.append(tmp)
-		for f in static_tractogram:
-		    nb_res_points = np.int(np.floor(len(f)/step_size))
-		    tmp = set_number_of_points(f, nb_res_points)
-		    static_tractogram_res.append(tmp)	
-		moving_tractogram = moving_tractogram_res
+		static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
 		static_tractogram = static_tractogram_res
+		moving_tractogram_res = resample_tractogram(moving_tractogram, step_size=0.625)	
+		moving_tractogram = moving_tractogram_res
 
 		print("Set parameters as in Garyfallidis et al. 2015.") 
 		threshold_length = 40.0 # 50mm / 1.25
