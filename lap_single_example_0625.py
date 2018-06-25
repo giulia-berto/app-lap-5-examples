@@ -18,7 +18,7 @@ from dipy.tracking.streamline import apply_affine
 from dipy.tracking.streamline import set_number_of_points
 from dissimilarity import compute_dissimilarity, dissimilarity
 from dipy.tracking.distances import bundles_distances_mam
-from dipy.metric import length
+from dipy.tracking.utils import length
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
 

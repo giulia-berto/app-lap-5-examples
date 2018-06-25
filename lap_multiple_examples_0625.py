@@ -13,7 +13,7 @@ import numpy as np
 from nibabel.streamlines import load, save
 from tractograms_slr_0625 import tractograms_slr
 from lap_single_example_0625 import lap_single_example, save_bundle
-from dipy.metric import length
+from dipy.tracking.utils import length
 
 
 def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_target_tract_cost):

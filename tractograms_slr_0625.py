@@ -18,7 +18,7 @@ from nibabel.streamlines import load
 from dipy.segment.clustering import QuickBundles
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import set_number_of_points
-from dipy.metric import length
+from dipy.tracking.utils import length
 
 
 def resample_tractogram(tractogram, step_size):
