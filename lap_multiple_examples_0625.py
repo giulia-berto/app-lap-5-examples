@@ -63,7 +63,7 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 		example_bundle_len_med = np.median(np.hstack(result_lap[:,0,2]))
 
 		print("Ranking the estimated streamlines...")
-		estimated_bundle_idx_ranked = ranking_schema(estimated_bundle_idx, min_cost_values)                                                       
+		estimated_bundle_idx_ranked = ranking_schema(estimated_bundle_idx, min_cost_values)                      
 
 		print("Extracting the estimated bundle...")
 		estimated_bundle_idx_ranked_med = estimated_bundle_idx_ranked[0:int(example_bundle_len_med)]
