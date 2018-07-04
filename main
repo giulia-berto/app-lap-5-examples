@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -k o
-#PBS -l nodes=1:ppn=16,walltime=40:00:00
+#PBS -l nodes=1:ppn=16,walltime=20:00:00
 
 ## modules
 echo "Loading modules"
@@ -131,14 +131,18 @@ done
 
 echo "Running LAP multi example"
 mkdir tracts_tck;
+mkdir results_lap;
+mkdir supersets_idx;
 while read tract_name; do
 	echo "Tract name: $tract_name"; 
 	base_name=$tract_name'_tract'
 	output_filename=tracts_tck/${subjID}'_'$base_name'_'$run'.tck'
 	array_filename='result_lap'
+	superset_filename='superset_idx'
 	python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
 	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
-	mv result_lap.npy ${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+	mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+	mv superset_idx.npy ./supersets_idx/${subjID}'_'${base_name/tract/$superset_filename}'_'$run'.npy'
 
 	ret=$?
 	if [ ! $ret -eq 0 ]; then

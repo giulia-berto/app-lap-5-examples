@@ -11,6 +11,7 @@ import os.path
 import nibabel as nib
 import numpy as np
 import pickle
+import json
 from os.path import isfile
 from nibabel.streamlines import load
 from tractograms_slr_0625 import tractograms_slr
@@ -21,6 +22,7 @@ from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.utils import length
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
+
 
 try:
     from linear_assignment import LinearAssignment
@@ -72,6 +74,13 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
     D, I = kdt.query(dm_source_tract, k=k)
     superset = np.unique(I.flat)
     np.save('superset_idx', superset)
+    with open('config.json') as f:
+        data = json.load(f)
+	if data["local_slr"] == 'true':
+	    print("Computing local SLR")
+	    local_affine = tractograms_slr(source_tract, superset)
+	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
+	    source_tract = source_tract_aligned
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
                                                              len(superset)))
     cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
@@ -160,7 +169,7 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 		hdr['voxel_to_rasmm'] = aff_vox_to_ras 
 
 		# Saving bundle
-		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=np.eye(4))
+		t = nib.streamlines.tractogram.Tractogram(estimated_bundle, affine_to_rasmm=aff_vox_to_ras)
 		nib.streamlines.save(t, out_filename, header=hdr)
 		print("Bundle saved in %s" % out_filename)
 
