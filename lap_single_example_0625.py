@@ -76,7 +76,7 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
     np.save('superset_idx', superset)
     with open('config.json') as f:
         data = json.load(f)
-	if data["local_slr"] == 'true':
+	if data["local_slr"] == True:
 	    print("Computing local SLR")
 	    local_affine = tractograms_slr(source_tract, superset)
 	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
