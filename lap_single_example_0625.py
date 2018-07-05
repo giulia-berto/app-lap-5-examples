@@ -115,7 +115,7 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
         data = json.load(f)
 	if data["local_slr"] == True:
 	    print("Computing local SLR")
-	    local_affine = local_slr(source_tract, superset)
+	    local_affine = local_slr(source_tract, tractogram[superset])
 	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
 	    source_tract = source_tract_aligned
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
