@@ -44,6 +44,43 @@ def resample_tractogram(tractogram, step_size):
     return tractogram_res
 
 
+def local_slr(moving_tractogram, static_tractogram):
+    """Perform local SLR.
+    """
+    print("Resampling tractograms with step size = 0.625 mm") 
+    static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
+    static_tractogram = static_tractogram_res
+    moving_tractogram_res = resample_tractogram(moving_tractogram, step_size=0.625)	
+    moving_tractogram = moving_tractogram_res
+
+    print("Set parameters as in Garyfallidis et al. 2015.") 
+    threshold_length = 40.0 # 50mm / 1.25
+    qb_threshold = 16.0  # 20mm / 1.25 
+    nb_res_points = 20
+
+    print("Performing QuickBundles of static tractogram and resampling...")
+    st = np.array([s for s in static_tractogram if len(s) > threshold_length], dtype=np.object)
+    qb = QuickBundles(threshold=qb_threshold)
+    st_clusters = [cluster.centroid for cluster in qb.cluster(st)]
+    st_clusters = set_number_of_points(st_clusters, nb_res_points)
+
+    print("Performing QuickBundles of moving tractogram and resampling...")
+    mt = np.array([s for s in moving_tractogram if len(s) > threshold_length], dtype=np.object)
+    qb = QuickBundles(threshold=qb_threshold)
+    mt_clusters = [cluster.centroid for cluster in qb.cluster(mt)]
+    mt_clusters = set_number_of_points(mt_clusters, nb_res_points)
+
+    print("Performing Linear Registration...")
+    srr = StreamlineLinearRegistration()
+    srm = srr.optimize(static=st_clusters, moving=mt_clusters)
+
+    print("Affine transformation matrix with Streamline Linear Registration:")
+    affine = srm.matrix
+    print('%s' %affine)
+
+    return affine
+
+
 def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
     """Compute the dissimilarity representation of the target tractogram and 
     build the kd-tree.
@@ -78,7 +115,7 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
         data = json.load(f)
 	if data["local_slr"] == True:
 	    print("Computing local SLR")
-	    local_affine = tractograms_slr(source_tract, superset)
+	    local_affine = local_slr(source_tract, superset)
 	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
 	    source_tract = source_tract_aligned
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
