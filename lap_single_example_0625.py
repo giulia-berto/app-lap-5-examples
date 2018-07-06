@@ -17,6 +17,8 @@ from nibabel.streamlines import load
 from tractograms_slr_0625 import tractograms_slr
 from dipy.tracking.streamline import apply_affine
 from dipy.tracking.streamline import set_number_of_points
+from dipy.segment.clustering import QuickBundles
+from dipy.align.streamlinear import StreamlineLinearRegistration
 from dissimilarity import compute_dissimilarity, dissimilarity
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.utils import length
