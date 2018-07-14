@@ -146,7 +146,9 @@ def show_tracts(estimated_target_tract, target_tract):
 def lap_single_example(moving_tractogram, static_tractogram, example):
 	"""Code for LAP from a single example.
 	"""
-	k = 2000
+	with open('config.json') as f:
+            data = json.load(f)
+	    k = data["k"]
 	distance_func = bundles_distances_mam
 
 	print("Computing the affine slr transformation.")
