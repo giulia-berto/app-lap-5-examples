@@ -21,6 +21,7 @@ segmentations=`jq -r '.segmentations' config.json`
 movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
 run=`jq -r '.run' config.json`
+ANTs=`jq -r '.ANTs' config.json`
 
 # Building arrays
 arr_seg=()
