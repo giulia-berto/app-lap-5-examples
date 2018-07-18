@@ -12,6 +12,7 @@ import nibabel as nib
 import numpy as np
 import pickle
 import json
+import time
 from os.path import isfile
 from nibabel.streamlines import load
 from tractograms_slr_0625 import tractograms_slr
@@ -124,7 +125,11 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
                                                              len(superset)))
     cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
     print("Computing RLAP with LAPJV...")
+    t0 = time.time()
+    time.time()
     assignment = LinearAssignment(cost_matrix).solution
+    time.time()
+    print("Time for computing the solution to the assignment problem = %s seconds" %(time.time()-t0))
     estimated_bundle_idx = superset[assignment]
     min_cost_values = cost_matrix[np.arange(len(cost_matrix)), assignment]
 
