@@ -101,6 +101,10 @@ else
 		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverterMulti ${arr_mov[i]//,} ${arr_t1s[i]//,}
 		cp output.trk tractograms_directory/$id_mov'_track.trk';
+		if [ $ANTs == true ]; then
+			echo "ANTs transformation with T1";
+			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
+		fi
 	done 
 fi
 
@@ -121,10 +125,10 @@ do
 	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
     	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
 	while read tract_name; do
-		if [ ! -d "examples_directory_$tract_name" ]; then
-  		mkdir examples_directory_$tract_name;
-		fi
 		echo "Tract name: $tract_name";
+		if [ ! -d "examples_directory_$tract_name" ]; then
+  			mkdir examples_directory_$tract_name;
+		fi
 		mv $tract_name'_tract.trk' examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk';
 
 		if [ -z "$(ls -A -- "examples_directory_$tract_name")" ]; then    
@@ -134,6 +138,11 @@ do
 			echo "examples_directory created."; 
 		fi	
 	done < tract_name_list.txt
+	
+	if [ $ANTs == true ]; then
+		echo "ANTs registration with T1";
+		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
+	fi
 done
 
 
@@ -148,7 +157,11 @@ while read tract_name; do
 	output_filename=tracts_tck/${subjID}'_'$base_name'_'$run'.tck'
 	array_filename='result_lap'
 	superset_filename='superset_idx'
-	python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
+	if [ $ANTs == true ]; then
+		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
+	else
+		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
+	fi
 	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
 	mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 	mv superset_idx.npy ./supersets_idx/${subjID}'_'${base_name/tract/$superset_filename}'_'$run'.npy'

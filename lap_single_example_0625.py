@@ -149,16 +149,21 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	with open('config.json') as f:
             data = json.load(f)
 	    k = data["k"]
+	    ANTs = data["ANTs"]
 	distance_func = bundles_distances_mam
 
-	print("Computing the affine slr transformation.")
-	affine = tractograms_slr(moving_tractogram, static_tractogram)
-
-	print("Applying the affine to the example bundle.")
 	example_bundle = nib.streamlines.load(example)
 	example_bundle = example_bundle.streamlines
 	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
-	example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
+	
+	if ANTs == True:
+		print("Data already aligned with ANTs")
+		example_bundle_aligned = example_bundle_res
+	else:
+		print("Computing the affine slr transformation.")
+		affine = tractograms_slr(moving_tractogram, static_tractogram)
+		print("Applying the affine to the example bundle.")
+		example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
 	
 	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
 	static_tractogram = nib.streamlines.load(static_tractogram)
