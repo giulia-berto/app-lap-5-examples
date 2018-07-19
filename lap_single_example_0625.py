@@ -124,13 +124,16 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
                                                              len(superset)))
     cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
+    np.save('cost_matrix', cost_matrix)
     print("Computing RLAP with LAPJV...")
     t0 = time.time()
     time.time()
     assignment = LinearAssignment(cost_matrix).solution
+    np.save('assignment', assignment)
     time.time()
     print("Time for computing the solution to the assignment problem = %s seconds" %(time.time()-t0))
     estimated_bundle_idx = superset[assignment]
+    np.save('estimated_bundle_idx', estimated_bundle_idx)
     min_cost_values = cost_matrix[np.arange(len(cost_matrix)), assignment]
 
     return estimated_bundle_idx, min_cost_values
