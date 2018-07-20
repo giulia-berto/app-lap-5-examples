@@ -26,10 +26,10 @@ T1W_AFF=${T1W_ANT_PRE}affine.txt
 T1W_IWARP=${T1W_ANT_PRE}invwarp.nii.gz
 T1W_IWARP_FIX=${T1W_ANT_PRE}InverseWarp.nii.gz
 
-TCK_MOVE_PRE=sub-${SUB_MOVE}
-TCK_DIR=aligned_tracts
-mkdir ${TCK_DIR}
-TCK_OUT_PRE=${TCK_DIR}/sub-${SUB_MOVE}
+#TCK_MOVE_PRE=sub-${SUB_MOVE}
+#TCK_DIR=aligned_tracts
+#mkdir ${TCK_DIR}
+#TCK_OUT_PRE=${TCK_DIR}/sub-${SUB_MOVE}
 
 #------------------------------------------------------------------------------
 # ANTS Registration of tractograms
