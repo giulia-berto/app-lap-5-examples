@@ -176,7 +176,7 @@ done < tract_name_list.txt
 
 
 echo "Build partial tractogram"
-output_filename=${subjID}'_var-partial_tract_E'${run}'.tck';
+output_filename=${subjID}'_var-partial_tract_'${run}'.tck';
 python build_partial_tractogram.py -tracts_tck_dir 'tracts_tck' -out ${output_filename};
 #singularity exec -e docker://brainlife/dipy:0.14 python ./build_partial_tractogram.py -tracts_tck_dir tracts_tck -out $output_filename
 if [ -f ${output_filename} ]; then 
