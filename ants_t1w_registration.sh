@@ -26,10 +26,6 @@ T1W_AFF=${T1W_ANT_PRE}affine.txt
 T1W_IWARP=${T1W_ANT_PRE}invwarp.nii.gz
 T1W_IWARP_FIX=${T1W_ANT_PRE}InverseWarp.nii.gz
 
-#TCK_MOVE_PRE=sub-${SUB_MOVE}
-#TCK_DIR=aligned_tracts
-#mkdir ${TCK_DIR}
-#TCK_OUT_PRE=${TCK_DIR}/sub-${SUB_MOVE}
 
 #------------------------------------------------------------------------------
 # ANTS Registration of tractograms
@@ -56,11 +52,11 @@ while read tract_name; do
     fi
     tract=examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk'
     python trk2tck.py ${tract}
-    tcknormalise examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck' \
-	$WARP_T1W aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck' -force -quiet
-    python tck2trk.py ${T1W_MOVE} aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
-    #rm examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
-    #rm aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
+    tcknormalise examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck \
+	$WARP_T1W aligned_examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck -force -quiet
+    python tck2trk.py ${T1W_MOVE} aligned_examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck
+    rm examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck
+    rm aligned_examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck
 done < tract_name_list.txt
 
 
