@@ -59,8 +59,8 @@ while read tract_name; do
     tcknormalise examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck' \
 	$WARP_T1W aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck' -force -quiet
     python tck2trk.py ${T1W_MOVE} aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
-    rm examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
-    rm aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
+    #rm examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
+    #rm aligned_examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.tck'
 done < tract_name_list.txt
 
 
