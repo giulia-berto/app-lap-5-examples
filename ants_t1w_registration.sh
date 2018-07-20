@@ -50,7 +50,7 @@ while read tract_name; do
     if [ ! -d "aligned_examples_directory_$tract_name" ]; then
   	mkdir aligned_examples_directory_$tract_name;
     fi
-    tract=examples_directory_$tract_name/$id_mov'_'$tract_name'_tract.trk'
+    tract=examples_directory_$tract_name/${SUB_MOVE}_${tract_name}_tract.trk
     python trk2tck.py ${tract}
     tcknormalise examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck \
 	$WARP_T1W aligned_examples_directory_${tract_name}/${SUB_MOVE}_${tract_name}_tract.tck -force -quiet
