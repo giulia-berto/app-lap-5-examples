@@ -22,6 +22,8 @@ from dipy.segment.clustering import QuickBundles
 from dipy.align.streamlinear import StreamlineLinearRegistration
 from dissimilarity import compute_dissimilarity, dissimilarity
 from dipy.tracking.distances import bundles_distances_mam
+from compute_streamline_measures import streamlines_idx, compute_superset
+from endpoints_distance import bundles_distances_endpoints_fastest
 from dipy.tracking.utils import length
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
@@ -107,96 +109,60 @@ def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
     return kdt, prototypes    
 
 
-def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
-    """Code for Rectangular Linear Assignment Problem.
+def compute_lap_matrices(superset_idx, source_tract, tractogram, distance, nbp=200):
+    """Code for computing the inputs to the MODIFIED Rectangular Linear Assignment Problem.
     """
-    tractogram = np.array(tractogram, dtype=np.object)
-    D, I = kdt.query(dm_source_tract, k=k)
-    superset = np.unique(I.flat)
-    np.save('superset_idx', superset)
-    with open('config.json') as f:
-        data = json.load(f)
-	if data["local_slr"] == True:
-	    print("Computing local SLR")
-	    local_affine = local_slr(source_tract, tractogram[superset])
-	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
-	    source_tract = source_tract_aligned
-    print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
-                                                             len(superset)))
-    cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
-    t0 = time.time()
-    np.save('cost_matrix', cost_matrix)
+    if distance=="bundles_distances_mdf":
+    	print("Resampling at %s points." %nbp)
+    	source_tract_res = np.array([set_number_of_points(s, nb_points=nbp) for s in source_tract])
+    	tractogram_res = np.array([set_number_of_points(s, nb_points=nbp) for s in tractogram])
+    
+    	print("Computing the distance matrix (%s x %s) for RLAP with %s... " % (len(source_tract), len(superset_idx), distance))
+    	t0=time.time()
+    	distance_matrix = dissimilarity(source_tract_res, tractogram_res[superset_idx], distance)
+    	print("Time for computing the distance matrix = %s seconds" %(time.time()-t0))
+
+    else:
+	print("Computing the distance matrix (%s x %s) for RLAP with %s... " % (len(source_tract), len(superset_idx), distance))
+    	t0=time.time()
+    	distance_matrix = dissimilarity(source_tract, tractogram[superset_idx], distance)
+    	print("Time for computing the distance matrix = %s seconds" %(time.time()-t0))
+
+        print("Resampling at %s points." %nbp)
+    	source_tract_res = np.array([set_number_of_points(s, nb_points=nbp) for s in source_tract])
+    	tractogram_res = np.array([set_number_of_points(s, nb_points=nbp) for s in tractogram])
+
+    print("Computing the terminal points matrix (%s x %s) for RLAP... " % (len(source_tract), len(superset_idx)))
+    t1=time.time()
+    terminal_matrix = bundles_distances_endpoints_fastest(source_tract, tractogram[superset_idx])
+    print("Time for computing the terminal points matrix = %s seconds" %(time.time()-t1))
+    
+    print("Computing the curvature similarity matrix (%s x %s) for RLAP... " % (len(source_tract), len(superset_idx)))
+    t1=time.time()
+    curvature_matrix = curvature_diff(source_tract_res, tractogram_res[superset_idx])
+    print("Time for computing the curvature similarity matrix = %s seconds" %(time.time()-t1))
+    
+    #normalize matrices
+    distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
+    curvature_matrix = (curvature_matrix-np.min(curvature_matrix))/(np.max(curvature_matrix)-np.min(curvature_matrix))
+    terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
+
+    return distance_matrix, curvature_matrix, terminal_matrix
+
+
+def RLAP_modified_terminal_curvature(distance_matrix, curvature_matrix, terminal_matrix, superset_idx, g, h):
+    """Code for MODIFIED Rectangular Linear Assignment Problem.
+    """
+    print("Computing cost matrix.")
+    cost_matrix = distance_matrix + g * terminal_matrix + h * curvature_matrix
     print("Computing RLAP with LAPJV...")
+    t0=time.time()
     assignment = LinearAssignment(cost_matrix).solution
-    np.save('assignment', assignment)
-    estimated_bundle_idx = superset[assignment]
-    np.save('estimated_bundle_idx', estimated_bundle_idx)
+    estimated_bundle_idx = superset_idx[assignment]
     min_cost_values = cost_matrix[np.arange(len(cost_matrix)), assignment]
-    time.time()
     print("Time for computing the solution to the assignment problem = %s seconds" %(time.time()-t0))
 
     return estimated_bundle_idx, min_cost_values
-
-
-def show_tracts(estimated_target_tract, target_tract):
-	"""Visualization of the tracts.
-	"""
-	ren = fvtk.ren()
-	fvtk.add(ren, fvtk.line(estimated_target_tract, fvtk.colors.green,
-	                        linewidth=1, opacity=0.3))
-	fvtk.add(ren, fvtk.line(target_tract, fvtk.colors.white,
-	                        linewidth=2, opacity=0.3))
-	fvtk.show(ren)
-	fvtk.clear(ren)
-
-
-def lap_single_example(moving_tractogram, static_tractogram, example):
-	"""Code for LAP from a single example.
-	"""
-	with open('config.json') as f:
-            data = json.load(f)
-	    k = data["k"]
-	    ANTs = data["ANTs"]
-	distance_func = bundles_distances_mam
-
-	example_bundle = nib.streamlines.load(example)
-	example_bundle = example_bundle.streamlines
-	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
-	
-	if ANTs == True:
-		print("Data already aligned with ANTs")
-		example_bundle_aligned = example_bundle_res
-	else:
-		print("Computing the affine slr transformation.")
-		affine = tractograms_slr(moving_tractogram, static_tractogram)
-		print("Applying the affine to the example bundle.")
-		example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
-	
-	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
-	static_tractogram = nib.streamlines.load(static_tractogram)
-	static_tractogram = static_tractogram.streamlines
-	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
-	static_tractogram = static_tractogram_res
-	if isfile('prototypes.npy') & isfile('kdt'):
-		print("Retrieving past results for kdt and prototypes.")
-		kdt_filename='kdt'
-		kdt = pickle.load(open(kdt_filename))
-		prototypes = np.load('prototypes.npy')
-	else:
-		kdt, prototypes = compute_kdtree_and_dr_tractogram(static_tractogram)
-		#Saving files
-		kdt_filename='kdt'
-		pickle.dump(kdt, open(kdt_filename, 'w'), protocol=pickle.HIGHEST_PROTOCOL)
-		np.save('prototypes', prototypes)
-
-	print("Compute the dissimilarity of the aligned example bundle with the prototypes of target tractogram.")
-	example_bundle_aligned = np.array(example_bundle_aligned, dtype=np.object)
-	dm_example_bundle_aligned = distance_func(example_bundle_aligned, prototypes)
-
-	print("Segmentation as Rectangular linear Assignment Problem (RLAP).")
-	estimated_bundle_idx, min_cost_values = RLAP(kdt, k, dm_example_bundle_aligned, example_bundle_aligned, static_tractogram, distance_func)
-
-	return estimated_bundle_idx, min_cost_values, len(example_bundle)
 
 
 def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
@@ -241,7 +207,72 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 		print("Bundle saved in %s" % out_filename)
 
 	else:
-		print("%s format not supported." % extension)	
+		print("%s format not supported." % extension)
+
+
+def lap_single_example(moving_tractogram, static_tractogram, example):
+	"""Code for LAP from a single example.
+	"""
+	with open('config.json') as f:
+            data = json.load(f)
+	    k = data["k"]
+	    ANTs = data["ANTs"]
+	distance_func = bundles_distances_mam
+
+	example_bundle = nib.streamlines.load(example)
+	example_bundle = example_bundle.streamlines
+	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
+	
+	if ANTs == True:
+		print("Data already aligned with ANTs")
+		example_bundle_aligned = example_bundle_res
+	else:
+		print("Computing the affine slr transformation.")
+		affine = tractograms_slr(moving_tractogram, static_tractogram)
+		print("Applying the affine to the example bundle.")
+		example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
+	
+	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
+	static_tractogram = nib.streamlines.load(static_tractogram)
+	static_tractogram = static_tractogram.streamlines
+	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
+	static_tractogram = static_tractogram_res
+	if isfile('prototypes.npy') & isfile('kdt'):
+		print("Retrieving past results for kdt and prototypes.")
+		kdt_filename='kdt'
+		kdt = pickle.load(open(kdt_filename))
+		prototypes = np.load('prototypes.npy')
+	else:
+		kdt, prototypes = compute_kdtree_and_dr_tractogram(static_tractogram)
+		#Saving files
+		kdt_filename='kdt'
+		pickle.dump(kdt, open(kdt_filename, 'w'), protocol=pickle.HIGHEST_PROTOCOL)
+		np.save('prototypes', prototypes)
+
+	print("Computing superset with k = %s" %k)
+	superset_idx = compute_superset(example_bundle_aligned, kdt, prototypes, k=k)
+
+	with open('config.json') as f:
+            data = json.load(f)
+	if data["local_slr"] == True:
+	    print("Computing local SLR")
+	    local_affine = local_slr(example_bundle_aligned, static_tractogram[superset_idx])
+	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in example_bundle_aligned])
+	    example_bundle_aligned = source_tract_aligned
+
+	print("Segmentation as Rectangular linear Assignment Problem (RLAP).")
+	distance_matrix, curvature_matrix, terminal_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, distance=distance_func)
+
+	with open('config.json') as f:
+            data = json.load(f)
+	    g = data["g"]
+	    h = data["h"]
+
+	print("Using g = %s and h = %s" %(g,h))
+	estimated_bundle_idx, min_cost_values = RLAP_modified_terminal_curvature(distance_matrix, curvature_matrix, terminal_matrix, superset_idx, g, h)
+
+	return estimated_bundle_idx, min_cost_values, len(example_bundle)
+	
 
 
 if __name__ == '__main__':
