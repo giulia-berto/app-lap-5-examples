@@ -25,6 +25,7 @@ from dipy.tracking.distances import bundles_distances_mam
 from compute_streamline_measures import streamlines_idx, compute_superset
 from endpoints_distance import bundles_distances_endpoints_fastest
 from dipy.tracking.utils import length
+from dipy.tracking import metrics as tm
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
 
@@ -47,6 +48,20 @@ def resample_tractogram(tractogram, step_size):
 	tmp = set_number_of_points(f, nb_res_points)
 	tractogram_res.append(tmp)
     return tractogram_res
+
+def curvature_diff(streamlines_A, streamlines_B):
+    curvature_A = np.zeros(len(streamlines_A))
+    curvature_B = np.zeros(len(streamlines_B))
+    result = np.zeros((len(streamlines_A), len(streamlines_B)))
+    for i, sa in enumerate(streamlines_A):
+        curvature_A[i] = tm.mean_curvature(sa)
+    for j, sb in enumerate(streamlines_B):
+        curvature_B[j] = tm.mean_curvature(sb)
+    for i, sa in enumerate(streamlines_A):
+        for j, sb in enumerate(streamlines_B):
+            result[i, j] = abs(curvature_A[i]-curvature_B[j])
+	#print("Row %s done." %i)
+    return result
 
 
 def local_slr(moving_tractogram, static_tractogram):

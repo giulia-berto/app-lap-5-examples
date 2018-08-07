@@ -146,7 +146,6 @@ do
 done
 
 
-
 echo "Running LAP multi example"
 mkdir tracts_tck;
 mkdir results_lap;
