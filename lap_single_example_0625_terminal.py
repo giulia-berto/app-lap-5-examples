@@ -127,6 +127,7 @@ def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
 def compute_lap_matrices(superset_idx, source_tract, tractogram, distance, nbp=200):
     """Code for computing the inputs to the MODIFIED Rectangular Linear Assignment Problem.
     """
+    tractogram = np.array(tractogram, dtype=np.object)
     if distance=="bundles_distances_mdf":
     	print("Resampling at %s points." %nbp)
     	source_tract_res = np.array([set_number_of_points(s, nb_points=nbp) for s in source_tract])
