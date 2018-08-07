@@ -163,7 +163,7 @@ while read tract_name; do
 	fi
 	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
 	mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
-	mv superset_idx.npy ./supersets_idx/${subjID}'_'${base_name/tract/$superset_filename}'_'$run'.npy'
+	#mv superset_idx.npy ./supersets_idx/${subjID}'_'${base_name/tract/$superset_filename}'_'$run'.npy'
 
 	ret=$?
 	if [ ! $ret -eq 0 ]; then
