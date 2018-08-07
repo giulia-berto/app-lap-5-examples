@@ -6,6 +6,7 @@ from __future__ import division, print_function, absolute_import
 from numpy.linalg import norm
 from dipy.tracking.distances import bundles_distances_mdf
 from dipy.align.bundlemin import distance_matrix_mdf
+import numpy as np
 
 
 def streamline_distance_endpoints(s_A, s_B):
