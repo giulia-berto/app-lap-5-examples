@@ -17,7 +17,7 @@ def extract_supersets_from_classification(tractogram_filename, tag):
 	tractogram = nib.streamlines.load(tractogram_filename)
 	tractogram = tractogram.streamlines
 	subjID = tractogram_filename[-16:-10]
-	classification = '%s_%s_index.mat' %(subjID, tag)
+	classification = 'supersets_idx/%s_%s_index.mat' %(subjID, tag)
 	matlabfile = sio.loadmat(classification)
 	indeces = np.array(matlabfile['index'])	
 
