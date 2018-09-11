@@ -10,8 +10,6 @@ function [classification] = wma_segSuperset_MdLF(feORwbfg, fsDir)
 %
 % (C) Daniel Bullock, 2018, Indiana University
 
-addpath(genpath('/home/giulia/brlife/git/wma'));
-addpath(genpath('/home/giulia/brlife/git/vistasoft'));
 
 %% parameter note & initialization
 

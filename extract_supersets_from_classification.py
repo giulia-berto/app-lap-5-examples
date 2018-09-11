@@ -37,8 +37,8 @@ def extract_supersets_from_classification(tractogram_filename, tag):
 	print("Right_%s_superset has %s streamlines." %(tag,len(Right_superset)))
 
 	# Saving supersets indeces
-	np.save('sub-%s_Left_%s_superset_idx.npy' %(subjID,tag), idx_Left_superset)
-	np.save('sub-%s_Right_%s_superset_idx.npy' %(subjID,tag), idx_Right_superset)
+	np.save('supersets_idx/sub-%s_Left_%s_superset_idx.npy' %(subjID,tag), idx_Left_superset)
+	np.save('supersets_idx/sub-%s_Right_%s_superset_idx.npy' %(subjID,tag), idx_Right_superset)
 
 
 

@@ -146,10 +146,18 @@ do
 done
 
 
+echo "Hybrid method. Computing the superset for the 8 minor tracts."
+mkdir supersets_idx;
+stat_sub=\'$subjID\'
+fsDir=`jq -r '.fsDir' config.json`
+fsDir=\'$fsDir\'
+matlab -nosplash -nodisplay -r "main_segSuperset($stat_sub, $fsDir)";
+python extract_supersets_from_classification.py -tractogram $subjID'_track.trk' -tag 'mdlf' -tag1 'parctpc'
+
+
 echo "Running LAP multi example"
 mkdir tracts_tck;
 mkdir results_lap;
-mkdir supersets_idx;
 while read tract_name; do
 	echo "Tract name: $tract_name"; 
 	base_name=$tract_name'_tract'
