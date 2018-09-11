@@ -272,13 +272,17 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	subjID = static_tractogram[-16:-10]
 	if example[-19:-10] == 'Left_pArc' or example[-18:-10] == 'Left_TPC':
 		tag = 'Left_parctpc'
+		print("Tag: %s" %tag)
 	elif example[-20:-10] == 'Right_pArc' or example[-19:-10] == 'Right_TPC':
 		tag = 'Right_parctpc' 
+		print("Tag: %s" %tag)
 	elif example[-23:-10] == 'Left_MdLF-SPL' or example[-23:-10] == 'Left_MdLF-Ang':
 		tag = 'Left_mdlf'
+		print("Tag: %s" %tag)
 	elif example[-24:-10] == 'Right_MdLF-SPL' or example[-24:-10] == 'Right_MdLF-Ang':
 		tag = 'Right_mdlf'
-	superset_idx = np.load('superset_idxs/sub-%s_%s_superset_idx.npy' %(subjID, tag))
+		print("Tag: %s" %tag)
+	superset_idx = np.load('supersets_idx/sub-%s_%s_superset_idx.npy' %(subjID, tag))
 
 	with open('config.json') as f:
             data = json.load(f)
