@@ -247,28 +247,8 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 		affine = tractograms_slr(moving_tractogram, static_tractogram)
 		print("Applying the affine to the example bundle.")
 		example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
-	
-	#print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
-	#static_tractogram = nib.streamlines.load(static_tractogram)
-	#static_tractogram = static_tractogram.streamlines
-	#static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
-	#static_tractogram = static_tractogram_res
-	#if isfile('prototypes.npy') & isfile('kdt'):
-	#	print("Retrieving past results for kdt and prototypes.")
-	#	kdt_filename='kdt'
-	#	kdt = pickle.load(open(kdt_filename))
-	#	prototypes = np.load('prototypes.npy')
-	#else:
-	#	kdt, prototypes = compute_kdtree_and_dr_tractogram(static_tractogram)
-	#	#Saving files
-	#	kdt_filename='kdt'
-	#	pickle.dump(kdt, open(kdt_filename, 'w'), protocol=pickle.HIGHEST_PROTOCOL)
-	#	np.save('prototypes', prototypes)
 
-	#print("Computing superset with k = %s" %k)
-	#superset_idx = compute_superset(example_bundle_aligned, kdt, prototypes, k=k)
-
-	print("Loading superset idx")
+	print("Loading superset idx...")
 	subjID = static_tractogram[-16:-10]
 	if example[-19:-10] == 'Left_pArc' or example[-18:-10] == 'Left_TPC':
 		tag = 'Left_parctpc'
@@ -283,6 +263,12 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 		tag = 'Right_mdlf'
 		print("Tag: %s" %tag)
 	superset_idx = np.load('supersets_idx/sub-%s_%s_superset_idx.npy' %(subjID, tag))
+	
+	print("Loading static tractogram...")
+	static_tractogram = nib.streamlines.load(static_tractogram)
+	static_tractogram = static_tractogram.streamlines
+	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
+	static_tractogram = static_tractogram_res
 
 	with open('config.json') as f:
             data = json.load(f)
@@ -331,4 +317,3 @@ if __name__ == '__main__':
 		save_bundle(estimated_bundle_idx, args.static, args.out)
 
 	sys.exit()    
-
