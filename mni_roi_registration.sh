@@ -16,14 +16,7 @@ fi
 #------------------------------------------------------------------------------
 
 CMD=$0
-# BIN=$(dirname $CMD)
-# SRC=$(cd $BIN/../..; pwd)
-# DER=$(basename "${CMD%.*}"${EXT})
 PAR="${CMD%.*}${EXT}.sh"
-# OUT=$SRC/derivatives/$DER/sub-$SUB
-
-# mkdir -p $SRC/derivatives/$DER
-# mkdir -p $SRC/derivatives/$DER/sub-$SUB
 
 OUT=aligned_ROIs
 mkdir -p $OUT
@@ -48,11 +41,6 @@ fi
 #------------------------------------------------------------------------------
 # Setting filenames
 #------------------------------------------------------------------------------
-
-#ANT_BIN=${SRC}/derivatives/ants-registration
-
-#mkdir -p ${ant_BIN}/sub-$SUB
-#mkdir -p ${ant_BIN}/sub-$SUB/aligned_rois
 
 ANT_BIN=$ANTSPATH
 ANT_PRE=${OUT}/sub-${SUB_STAT}_var-ant_
@@ -99,13 +87,3 @@ for ROI in $ROI_ALL; do
 done
 
 
-#------------------------------------------------------------------------------
-# IU Karst settings
-#------------------------------------------------------------------------------
-
-#PBS -k o 
-#PBS -l nodes=1:ppn=16,mem=16000mb,walltime=10:00:00 
-#PBS -M pavesani@iu.edu
-#PBS -m abe
-#PBS -N template_script
-#PBS -j oe
