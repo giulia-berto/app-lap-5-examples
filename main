@@ -26,6 +26,7 @@ movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
 run=`jq -r '.run' config.json`
 ANTs=`jq -r '.ANTs' config.json`
+tol=`jq -r '.tol' config.json`
 
 # Building arrays
 arr_seg=()
@@ -146,13 +147,23 @@ do
 done
 
 
-echo "Hybrid method. Computing the superset for the 8 minor tracts."
+echo "Hybrid method."
 mkdir supersets_idx;
-stat_sub=\'$subjID\'
-fsDir=`jq -r '.fsDir' config.json`
-fsDir=\'$fsDir\'
-matlab -nosplash -nodisplay -r "main_segSuperset($stat_sub, $fsDir)";
-python extract_supersets_from_classification.py -tractogram $subjID'_track.trk' -tag 'mdlf' -tag1 'parctpc'
+
+if [ $tol > 0 ]; then
+	echo  "The superset will be filtered with the two-waypoint ROIs."
+else
+	echo  "Computing the superset for the 8 minor tracts."
+	stat_sub=\'$subjID\'
+	fsDir=`jq -r '.fsDir' config.json`
+	fsDir=\'$fsDir\'
+	matlab -nosplash -nodisplay -r "main_segSuperset($stat_sub, $fsDir)";
+	python extract_supersets_from_classification.py -tractogram $subjID'_track.trk' -tag 'mdlf' -tag1 'parctpc'
+fi
+
+
+echo "Coregistering ROIs on the target subject space"
+./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
 
 
 echo "Running LAP multi example"
