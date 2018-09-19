@@ -146,6 +146,10 @@ do
 done
 
 
+echo "Coregistering ROIs on the target subject space"
+./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
+
+
 echo "Running LAP multi example"
 mkdir tracts_tck;
 mkdir results_lap;
