@@ -301,8 +301,8 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 		roi2_lab = table[tract_name].items()[1][1]
 		roi2_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi2_lab)
 		roi2 = nib.load(roi2_filename)
-		roi1_dist = bundle2roi_distance(tractogram[superset_idx], roi1)
-		roi2_dist = bundle2roi_distance(tractogram[superset_idx], roi2)
+		roi1_dist = bundle2roi_distance(static_tractogram[superset_idx], roi1)
+		roi2_dist = bundle2roi_distance(static_tractogram[superset_idx], roi2)
 		anatomical_vector = np.add(roi1_dist, roi2_dist)
 		filter_idx = (anatomical_vector > tol).astype(np.int_)
 		superset_idx = superset_idx[filter_idx==1]
