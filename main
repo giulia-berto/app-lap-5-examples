@@ -158,7 +158,7 @@ else
 	fsDir=`jq -r '.fsDir' config.json`
 	fsDir=\'$fsDir\'
 	matlab -nosplash -nodisplay -r "main_segSuperset($stat_sub, $fsDir)";
-	python extract_supersets_from_classification.py -tractogram $subjID'_track.trk' -tag 'mdlf' -tag1 'parctpc'
+	python extract_supersets_from_classification.py -tractogram $subjID'_track.trk' -tag 'mdlf' -tag1 'parctpc';
 fi
 
 
