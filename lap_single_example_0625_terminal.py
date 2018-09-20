@@ -13,6 +13,7 @@ import numpy as np
 import pickle
 import json
 import time
+import ntpath
 from os.path import isfile
 from nibabel.streamlines import load
 from tractograms_slr_0625 import tractograms_slr
