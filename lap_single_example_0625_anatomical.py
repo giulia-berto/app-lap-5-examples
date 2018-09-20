@@ -190,9 +190,9 @@ def compute_lap_matrices_ex(superset_idx, source_tract, tractogram, roi1, roi2, 
 	anatomical_ex_vector = np.add(roi1_ex_dist, roi2_ex_dist)
 	#subtraction
 	anatomical_matrix = np.zeros((len(source_tract), len(superset_idx)))
-	for ii, i in range(enumerate(source_tract)):
-		for jj, j in range(enumerate(superset_idx)):
-			anatomical_matrix[ii, jj] = np.abs(np.subtract(anatomical_ex_vector[ii]), anatomical_vector[jj])
+	for i in range(len(source_tract)):
+		for j in range(len(superset_idx)):
+			anatomical_matrix[i,j] = np.abs(np.subtract(anatomical_ex_vector[i], anatomical_vector[j]))
 	print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
 
 	#normalize matrices
