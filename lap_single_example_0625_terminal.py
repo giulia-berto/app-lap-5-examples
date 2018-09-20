@@ -13,6 +13,7 @@ import numpy as np
 import pickle
 import json
 import time
+import ntpath
 from os.path import isfile
 from nibabel.streamlines import load
 from tractograms_slr_0625 import tractograms_slr
@@ -24,10 +25,12 @@ from dissimilarity import compute_dissimilarity, dissimilarity
 from dipy.tracking.distances import bundles_distances_mam
 from compute_streamline_measures import streamlines_idx, compute_superset
 from endpoints_distance import bundles_distances_endpoints_fastest
-from dipy.tracking.utils import length
+from dipy.tracking.utils import length, streamline_near_roi
 from dipy.tracking import metrics as tm
 from sklearn.neighbors import KDTree
 from dipy.viz import fvtk
+from nibabel.affines import apply_affine 
+from scipy.spatial.distance import cdist
 
 
 try:
@@ -36,6 +39,21 @@ except ImportError:
     print("WARNING: Cythonized LAPJV not available. Falling back to Python.")
     print("WARNING: See README.txt")
     from linear_assignment_numpy import LinearAssignment
+
+
+def bundle2roi_distance(bundle, roi_mask, distance='euclidean'):
+	"""Compute the minimum euclidean distance between a
+	   set of streamlines and a ROI nifti mask.
+	"""
+	data = roi_mask.get_data()
+	affine = roi_mask.affine
+	roi_coords = np.array(np.where(data)).T
+	x_roi_coords = apply_affine(affine, roi_coords)
+	result=[]
+	for sl in bundle:                                                                                  
+		d = cdist(sl, x_roi_coords, distance)
+		result.append(np.min(d)) 
+	return result
 
 
 def resample_tractogram(tractogram, step_size):
@@ -48,6 +66,7 @@ def resample_tractogram(tractogram, step_size):
 	tmp = set_number_of_points(f, nb_res_points)
 	tractogram_res.append(tmp)
     return tractogram_res
+
 
 def curvature_diff(streamlines_A, streamlines_B):
     curvature_A = np.zeros(len(streamlines_A))
@@ -233,7 +252,11 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
             data = json.load(f)
 	    k = data["k"]
 	    ANTs = data["ANTs"]
+	    tol = data["tol"]
 	distance_func = bundles_distances_mam
+
+	subjID = ntpath.basename(static_tractogram)[0:6]
+	tract_name = ntpath.basename(example)[7:-10]
 
 	example_bundle = nib.streamlines.load(example)
 	example_bundle = example_bundle.streamlines
@@ -267,6 +290,44 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 
 	print("Computing superset with k = %s" %k)
 	superset_idx = compute_superset(example_bundle_aligned, kdt, prototypes, k=k)
+	
+	if tol > 0:
+		print("Filtering superset with the two-waypoint ROIs")
+		table_filename = 'ROIs_labels_dictionary.pickle'
+		table = pickle.load(open(table_filename))
+		roi1_lab = table[tract_name].items()[0][1]
+		roi1_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi1_lab)
+		roi1 = nib.load(roi1_filename)
+		roi2_lab = table[tract_name].items()[1][1]
+		roi2_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi2_lab)
+		roi2 = nib.load(roi2_filename)
+		roi1_dist = bundle2roi_distance(static_tractogram[superset_idx], roi1)
+		roi2_dist = bundle2roi_distance(static_tractogram[superset_idx], roi2)
+		anatomical_vector = np.add(roi1_dist, roi2_dist)
+		filter_idx = (anatomical_vector > tol).astype(np.int_)
+		superset_idx = superset_idx[filter_idx==1]
+		
+	else:
+		print("Loading superset idx...")
+		if example[-19:-10] == 'Left_pArc' or example[-18:-10] == 'Left_TPC':
+			tag = 'Left_parctpc'
+			print("Tag: %s" %tag)
+		elif example[-20:-10] == 'Right_pArc' or example[-19:-10] == 'Right_TPC':
+			tag = 'Right_parctpc' 
+			print("Tag: %s" %tag)
+		elif example[-23:-10] == 'Left_MdLF-SPL' or example[-23:-10] == 'Left_MdLF-Ang':
+			tag = 'Left_mdlf'
+			print("Tag: %s" %tag)
+		elif example[-24:-10] == 'Right_MdLF-SPL' or example[-24:-10] == 'Right_MdLF-Ang':
+			tag = 'Right_mdlf'
+			print("Tag: %s" %tag)
+		superset_idx = np.load('supersets_idx/sub-%s_%s_superset_idx.npy' %(subjID, tag))
+	
+	print("Loading static tractogram...")
+	static_tractogram = nib.streamlines.load(static_tractogram)
+	static_tractogram = static_tractogram.streamlines
+	static_tractogram_res = resample_tractogram(static_tractogram, step_size=0.625)	
+	static_tractogram = static_tractogram_res
 
 	with open('config.json') as f:
             data = json.load(f)
@@ -315,4 +376,3 @@ if __name__ == '__main__':
 		save_bundle(estimated_bundle_idx, args.static, args.out)
 
 	sys.exit()    
-
