@@ -26,7 +26,6 @@ movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
 run=`jq -r '.run' config.json`
 ANTs=`jq -r '.ANTs' config.json`
-tol=`jq -r '.tol' config.json`
 
 # Building arrays
 arr_seg=()
@@ -98,7 +97,7 @@ else
 	cp output.trk $subjID'_track.trk';
 	for i in `seq 1 $num_ex`; 
 	do
-		t1_moving=${arr_t1s[i]//[,\"]}		
+		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
 		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
     		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverterMulti ${arr_mov[i]//,} ${arr_t1s[i]//,}
@@ -123,7 +122,7 @@ echo "AFQ conversion to trk"
 
 for i in `seq 1 $num_ex`; 
 do
-	t1_moving=${arr_t1s[i]//[,\"]}	
+	t1_moving=${arr_t1s[i]//[,\"]}
 	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
 	matlab -nosplash -nodisplay -r "afqConverterMulti(${arr_seg[i]//,}, ${arr_t1s[i]//,})";
     	#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/afqConverterMulti ${arr_seg[i]//,} ${arr_t1s[i]//,}
@@ -146,11 +145,20 @@ do
 		echo "ANTs registration with T1";
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
 	fi
+
+	echo "Coregistering ROIs on the moving subject space"
+	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ
+
 done
+
+
+echo "Coregistering ROIs on the target subject space"
+./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
 
 
 echo "Hybrid method."
 mkdir supersets_idx;
+tol=`jq -r '.tol' config.json`
 
 if [ $tol > 0 ]; then
 	echo  "The superset will be filtered with the two-waypoint ROIs."
@@ -164,13 +172,10 @@ else
 fi
 
 
-echo "Coregistering ROIs on the target subject space"
-./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
-
-
 echo "Running LAP multi example"
 mkdir tracts_tck;
 mkdir results_lap;
+mkdir supersets_idx;
 while read tract_name; do
 	echo "Tract name: $tract_name"; 
 	base_name=$tract_name'_tract'
