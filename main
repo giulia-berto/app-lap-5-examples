@@ -72,52 +72,31 @@ else
 	fi
 fi
 
-echo "Tractogram conversion to trk."
+echo "Tractogram conversion to trk and, if requested,  ANTs transformation"
 mkdir tractograms_directory;
-
-cp $static ./tractogram_static.tck;
-python tck2trk.py $t1_static tractogram_static.tck;
-#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
-cp tractogram_static.trk $subjID'_track.trk';
-for i in `seq 1 $num_ex`; 
-do 
-	t1_moving=${arr_t1s[i]//[,\"]}
-	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-	cp ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
-	python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
-	cp ${id_mov}_tractogram_moving.trk tractograms_directory/$id_mov'_track.trk';
-  	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
-done
-	
-
-if [ ${SLR_LAP} == true ]; then
-echo "SLR registration";
-	
+if [[ $static == *.tck ]];then
+	echo "Input in tck format. Convert it to trk."
+	cp $static ./tractogram_static.tck;
+	python tck2trk.py $t1_static tractogram_static.tck;
+	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
+	cp tractogram_static.trk $subjID'_track.trk';
 	for i in `seq 1 $num_ex`; 
-	do	
-		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		python tractograms_slr_0625.py -moving tractograms_directory/${id_mov}_track.trk -static tractogram_static.trk
-	done
-	#echo "Waiting for SLR registration to finish..."
-	#wait
-	#echo "SLR registration done." 
-fi
-
-
-if [ ${ANTs_LAP} == true -o ${ANTs_LAPen} == true ]; then
-echo "ANTs transformation with T1";
-	
-	for i in `seq 1 $num_ex`; 
-	do	
+	do 
 		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
+		cp ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
+		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
+		cp ${id_mov}_tractogram_moving.trk tractograms_directory/$id_mov'_track.trk';
+    		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
+		if [ ${ANTs_LAP} == true -o ${ANTs_LAPen} == true ]; then
+			echo "ANTs transformation with T1";
+			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
+		fi
 	done
-	echo "Waiting for ANTs tranformation to finish..."
+	echo "Waiting for ANTs tranformation to finish"
 	wait
 	echo "ANTs transformation done."
 fi
-
 
 if [ -z "$(ls -A -- "tractograms_directory")" ]; then    
 	echo "tractograms_directory is empty."; 
@@ -156,14 +135,30 @@ do
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
-done
-echo "Waiting for ANTs registration finish..."
-wait
-echo "ANTs registration done."
+	echo "Coregistering ROIs on the moving subject space"
+	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
 
+done
+echo "Waiting for ANTs registration and ROIs coregistration to finish"
+wait
+echo "ANTs registration and ROIs coregistration done."
 
 echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
+
+
+if [ ${SLR_LAP} == true ]; then
+echo "SLR registration";
+	
+	for i in `seq 1 $num_ex`; 
+	do	
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		python tractograms_slr_0625.py -moving tractograms_directory/${id_mov}_track.trk -static tractogram_static.trk
+	done
+	#echo "Waiting for SLR registration to finish..."
+	#wait
+	#echo "SLR registration done." 
+fi
 
 
 echo "Running LAP"
