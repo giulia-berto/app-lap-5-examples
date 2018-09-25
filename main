@@ -165,6 +165,13 @@ if [ ${SLR_LAP} == true ]; then
 		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
 
 	done < tract_name_list.txt
 fi
@@ -183,6 +190,13 @@ if [ ${ANTs_LAP} == true ]; then
 		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
 
 	done < tract_name_list.txt
 
@@ -202,6 +216,13 @@ if [ ${ANTs_LAPen} == true ]; then
 		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
 
 		cp tracts_tck sub-${subjID}_tracts_tck_${tract_name}
 
