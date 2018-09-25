@@ -147,20 +147,6 @@ echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
 
 
-if [ ${SLR_LAP} == true ]; then
-echo "SLR registration";
-	
-	for i in `seq 1 $num_ex`; 
-	do	
-		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		python tractograms_slr_0625.py -moving tractograms_directory/${id_mov}_track.trk -static tractogram_static.trk
-	done
-	#echo "Waiting for SLR registration to finish..."
-	#wait
-	#echo "SLR registration done." 
-fi
-
-
 echo "Running LAP"
 mkdir tracts_tck;
 mkdir results_lap;
