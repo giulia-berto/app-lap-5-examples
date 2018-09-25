@@ -100,7 +100,7 @@ echo "SLR registration";
 	done
 	#echo "Waiting for SLR registration to finish..."
 	#wait
-	#echo "SLR registration done."
+	#echo "SLR registration done." 
 fi
 
 
