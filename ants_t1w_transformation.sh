@@ -33,6 +33,6 @@ antsRegistrationSyNQuick.sh -d 3 \
 # ANTS Registration of structural images
 #------------------------------------------------------------------------------
 
-mv ${T1W_ANT_PRE}Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
-mv ${T1W_ANT_PRE}InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
-mv ${T1W_ANT_PRE}Affine.txt ${T1W_ANT_PRE}affine.txt
+mv ${T1W_ANT_PRE}1Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
+mv ${T1W_ANT_PRE}1InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
+mv ${T1W_ANT_PRE}0GenericAffine.mat ${T1W_ANT_PRE}affine.txt
