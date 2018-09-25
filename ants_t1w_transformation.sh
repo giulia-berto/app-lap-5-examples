@@ -22,8 +22,11 @@ T1W_ANT_PRE=sub-${SUB_MOVE}_space_${SUB_STAT}_var-t1w_
 #------------------------------------------------------------------------------
 
 # Warp Computation
-ANTS 3 -m CC[${T1W_STAT},${T1W_MOVE},1,5] -t SyN[0.5] \
-    -r Gauss[2,0] -o $T1W_ANT_PRE -i 30x90x20 --use-Histogram-Matching
+#ANTS 3 -m CC[${T1W_STAT},${T1W_MOVE},1,5] -t SyN[0.5] \
+#    -r Gauss[2,0] -o $T1W_ANT_PRE -i 30x90x20 --use-Histogram-Matching
+
+antsRegistrationSyNQuick.sh -d 3 \
+     -f $T1W_STAT -m $T1W_MOVE -t s -o $T1W_ANT_PRE
 
 
 #------------------------------------------------------------------------------
