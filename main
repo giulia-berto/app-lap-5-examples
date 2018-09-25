@@ -93,6 +93,7 @@ if [[ $static == *.tck ]];then
 	done
 	echo "Waiting for ANTs tranformation to finish"
 	wait
+	echo "ANTs transformation done."
 else
 	echo "Input in fe format. Convert it to trk."
 	matlab -nosplash -nodisplay -r "lifeConverterMulti('$static', '$t1_static')";
@@ -149,11 +150,12 @@ do
 	fi
 
 	echo "Coregistering ROIs on the moving subject space"
-	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ
+	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
 
 done
-echo "Waiting for ANTs registration to finish"
+echo "Waiting for ANTs registration and ROIs coregistration to finish"
 wait
+echo "ANTs registration and ROIs coregistration done."
 
 echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
