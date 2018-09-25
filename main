@@ -88,9 +88,11 @@ if [[ $static == *.tck ]];then
     		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
 		if [ $ANTs == true ]; then
 			echo "ANTs transformation with T1";
-			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
+			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 		fi
 	done
+	echo "Waiting for ANTs tranformation to finish"
+	wait
 else
 	echo "Input in fe format. Convert it to trk."
 	matlab -nosplash -nodisplay -r "lifeConverterMulti('$static', '$t1_static')";
@@ -143,14 +145,15 @@ do
 	
 	if [ $ANTs == true ]; then
 		echo "ANTs registration with T1";
-		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
+		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
 	echo "Coregistering ROIs on the moving subject space"
 	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ
 
 done
-
+echo "Waiting for ANTs registration to finish"
+wait
 
 echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
