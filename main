@@ -225,8 +225,8 @@ fi
 
 if [ ${ANTs_LAPen} == true ]; then
 
-	run=ANTs_LAP
-	echo "Running LAP multi example ANTs_LAP"
+	run=ANTs_LAPen
+	echo "Running LAP multi example ANTs_LAPen"
 	
 	while read tract_name; do
 		echo "Tract name: $tract_name"; 
