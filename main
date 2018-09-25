@@ -27,7 +27,7 @@ t1s=`jq -r '.t1s_moving' config.json`
 SLR_LAP=`jq -r '.SLR_LAP' config.json`
 ANTs_LAP=`jq -r '.ANTs_LAP' config.json`
 ANTs_LAPen=`jq -r '.ANTs_LAPen' config.json`
-true_segmentation=`jq -r '.true_segmentation' config.json`
+#true_segmentation=`jq -r '.true_segmentation' config.json`
 
 # Building arrays
 arr_seg=()
