@@ -156,9 +156,6 @@ do
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
-	#echo "Coregistering ROIs on the moving subject space"
-	#./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
-
 done
 echo "Waiting for ANTs registration finish..."
 wait
@@ -188,12 +185,6 @@ if [ ${SLR_LAP} == true ]; then
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
-		ret=$?
-		if [ ! $ret -eq 0 ]; then
-			echo "LAP single example failed"
-			echo $ret > finished
-			exit $ret
-		fi
 	done < tract_name_list.txt
 fi
 
@@ -212,12 +203,6 @@ if [ ${ANTs_LAP} == true ]; then
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
-		ret=$?
-		if [ ! $ret -eq 0 ]; then
-			echo "LAP single example failed"
-			echo $ret > finished
-			exit $ret
-		fi
 	done < tract_name_list.txt
 
 fi
@@ -237,13 +222,6 @@ if [ ${ANTs_LAPen} == true ]; then
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
-		ret=$?
-		if [ ! $ret -eq 0 ]; then
-			echo "LAP single example failed"
-			echo $ret > finished
-			exit $ret
-		fi
-
 		cp tracts_tck sub-${subjID}_tracts_tck_${tract_name}
 
 	done < tract_name_list.txt
@@ -252,17 +230,17 @@ fi
 
 
 # AFQ conversion and DSC computation
-echo "AFQ conversion of graound truth to trk"
-matlab -nosplash -nodisplay -r "afqConverter1()";
+#echo "AFQ conversion of graound truth to trk"
+#matlab -nosplash -nodisplay -r "afqConverter1()";
 
-echo "Computing voxel measures"
-python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
+#echo "Computing voxel measures"
+#python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
 
-ret=$?
-if [ ! $ret -eq 0 ]; then
-	echo "DSC computation failed"
-	echo $ret > finished
-	exit $ret
-fi
+#ret=$?
+#if [ ! $ret -eq 0 ]; then
+#	echo "DSC computation failed"
+#	echo $ret > finished
+#	exit $ret
+#fi
 
 echo "Complete"
