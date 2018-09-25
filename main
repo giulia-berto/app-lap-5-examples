@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -k o
-#PBS -l nodes=1:ppn=16,walltime=5:00:00
+#PBS -l nodes=1:ppn=8,walltime=10:00:00
 
 ## modules
 echo "Loading modules"
@@ -24,8 +24,10 @@ t1_static=`jq -r '.t1_static' config.json`
 segmentations=`jq -r '.segmentations' config.json`
 movings=`jq -r '.tractograms_moving' config.json`
 t1s=`jq -r '.t1s_moving' config.json`
-run=`jq -r '.run' config.json`
-ANTs=`jq -r '.ANTs' config.json`
+SLR_LAP=`jq -r '.SLR_LAP' config.json`
+ANTs_LAP=`jq -r '.ANTs_LAP' config.json`
+ANTs_LAPen=`jq -r '.ANTs_LAPen' config.json`
+#true_segmentation=`jq -r '.true_segmentation' config.json`
 
 # Building arrays
 arr_seg=()
@@ -70,47 +72,52 @@ else
 	fi
 fi
 
-echo "Tractogram conversion to trk and, if requested,  ANTs transformation"
+echo "Tractogram conversion to trk."
 mkdir tractograms_directory;
-if [[ $static == *.tck ]];then
-	echo "Input in tck format. Convert it to trk."
-	cp $static ./tractogram_static.tck;
-	python tck2trk.py $t1_static tractogram_static.tck;
-	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
-	cp tractogram_static.trk $subjID'_track.trk';
+
+cp $static ./tractogram_static.tck;
+python tck2trk.py $t1_static tractogram_static.tck;
+#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_static $static
+cp tractogram_static.trk $subjID'_track.trk';
+for i in `seq 1 $num_ex`; 
+do 
+	t1_moving=${arr_t1s[i]//[,\"]}
+	id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+	cp ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
+	python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
+	cp ${id_mov}_tractogram_moving.trk tractograms_directory/$id_mov'_track.trk';
+  	#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
+done
+	
+
+if [ ${SLR_LAP} == true ]; then
+echo "SLR registration";
+	
 	for i in `seq 1 $num_ex`; 
-	do 
+	do	
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		python tractograms_slr_0625.py -moving tractograms_directory/${id_mov}_track.trk -static tractogram_static.trk &
+	done
+	echo "Waiting for SLR registration to finish..."
+	wait
+	echo "SLR registration done."
+fi
+
+
+if [ ${ANTs_LAP} == true -o ${ANTs_LAPen} == true ]; then
+echo "ANTs transformation with T1";
+	
+	for i in `seq 1 $num_ex`; 
+	do	
 		t1_moving=${arr_t1s[i]//[,\"]}
 		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
-		cp ${arr_mov[i]//[,\"]} ./${id_mov}_tractogram_moving.tck;
-		python tck2trk.py $t1_moving ${id_mov}_tractogram_moving.tck;
-		cp ${id_mov}_tractogram_moving.trk tractograms_directory/$id_mov'_track.trk';
-    		#singularity exec docker://brainlife/dipy:0.14 python ./tck2trk.py $t1_moving tractogram_moving 
-		if [ $ANTs == true ]; then
-			echo "ANTs transformation with T1";
-			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
-		fi
+		./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	done
-	echo "Waiting for ANTs tranformation to finish"
+	echo "Waiting for ANTs tranformation to finish..."
 	wait
 	echo "ANTs transformation done."
-else
-	echo "Input in fe format. Convert it to trk."
-	matlab -nosplash -nodisplay -r "lifeConverterMulti('$static', '$t1_static')";
-	cp output.trk $subjID'_track.trk';
-	for i in `seq 1 $num_ex`; 
-	do
-		t1_moving=${arr_t1s[i]//[,\"]}
-		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")		
-		matlab -nosplash -nodisplay -r "lifeConverterMulti(${arr_mov[i]//,}, ${arr_t1s[i]//,})";
-    		#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/lifeConverterMulti ${arr_mov[i]//,} ${arr_t1s[i]//,}
-		cp output.trk tractograms_directory/$id_mov'_track.trk';
-		if [ $ANTs == true ]; then
-			echo "ANTs transformation with T1";
-			./ants_t1w_transformation.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static}
-		fi
-	done 
 fi
+
 
 if [ -z "$(ls -A -- "tractograms_directory")" ]; then    
 	echo "tractograms_directory is empty."; 
@@ -144,72 +151,103 @@ do
 		fi	
 	done < tract_name_list.txt
 	
-	if [ $ANTs == true ]; then
+	if [ ${ANTs_LAP} == true -o ${ANTs_LAPen} == true ]; then
 		echo "ANTs registration with T1";
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
-	echo "Coregistering ROIs on the moving subject space"
-	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
+	#echo "Coregistering ROIs on the moving subject space"
+	#./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
 
 done
-echo "Waiting for ANTs registration and ROIs coregistration to finish"
+echo "Waiting for ANTs registration finish..."
 wait
-echo "ANTs registration and ROIs coregistration done."
+echo "ANTs registration done."
+
 
 echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
 
 
-echo "Running LAP multi example"
+echo "Running LAP"
 mkdir tracts_tck;
 mkdir results_lap;
-mkdir supersets_idx;
-while read tract_name; do
-	echo "Tract name: $tract_name"; 
-	base_name=$tract_name'_tract'
-	output_filename=tracts_tck/${subjID}'_'$base_name'_'$run'.tck'
-	array_filename='result_lap'
-	superset_filename='superset_idx'
-	if [ $ANTs == true ]; then
-		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
-	else
+
+
+if [ ${SLR_LAP} == true ]; then
+
+	run=SLR_LAP
+	echo "Running LAP multi example SLR_LAP"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_$base_name_$run.tck
+		array_filename='result_lap'
 		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
-	fi
-	#singularity exec docker://brainlife/dipy:0.14 python ./lap_multiple_examples.py -moving_dir tractograms_directory -static ${subjID}_track.trk -ex_dir examples_directory -out $output_filename
-	mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
-	#mv superset_idx.npy ./supersets_idx/${subjID}'_'${base_name/tract/$superset_filename}'_'$run'.npy'
 
-	ret=$?
-	if [ ! $ret -eq 0 ]; then
-		echo "LAP single example failed"
-		echo $ret > finished
-		exit $ret
-	fi
-done < tract_name_list.txt
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 
-
-echo "Build partial tractogram"
-output_filename=${subjID}'_var-partial_tract_'${run}'.tck';
-python build_partial_tractogram.py -tracts_tck_dir 'tracts_tck' -out ${output_filename};
-#singularity exec -e docker://brainlife/dipy:0.14 python ./build_partial_tractogram.py -tracts_tck_dir tracts_tck -out $output_filename
-if [ -f ${output_filename} ]; then 
-    echo "Partial tractogram built."
-else 
-	echo "Partial tractogram missing."
-	exit 1
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+	done < tract_name_list.txt
 fi
 
-echo "Build a wmc structure"
-stat_sub=\'$subjID\'
-mov_sub=\'$run\'
-matlab -nosplash -nodisplay -r "build_wmc_structure($stat_sub, $mov_sub)";
-#singularity exec docker://brainlife/mcr:neurodebian1604-r2017a ./compiled/build_wmc_structure $subjID $mov_afq_id
-if [ -f 'output.mat' ]; then 
-    echo "WMC structure created."
-else 
-	echo "WMC structure missing."
-	exit 1
+
+if [ ${ANTs_LAP} == true ]; then
+
+	run=ANTs_LAP
+	echo "Running LAP multi example ANTs_LAP"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_$base_name_$run.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+	done < tract_name_list.txt
+
+fi
+
+
+if [ ${ANTs_LAPen} == true ]; then
+
+	run=ANTs_LAP
+	echo "Running LAP multi example ANTs_LAP"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_$base_name_$run.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+		cp tracts_tck sub-${subjID}_tracts_tck_${tract_name}
+
+	done < tract_name_list.txt
+
 fi
 
 echo "Complete"

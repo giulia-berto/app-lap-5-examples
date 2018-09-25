@@ -11,8 +11,9 @@ import os.path
 import nibabel as nib
 import numpy as np
 from nibabel.streamlines import load, save
-from tractograms_slr import tractograms_slr
-from lap_single_example import lap_single_example, save_bundle
+from tractograms_slr_0625 import tractograms_slr
+from lap_single_example_0625_enhanced import lap_single_example, save_bundle
+from dipy.tracking.utils import length
 
 
 def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_target_tract_cost):
@@ -62,7 +63,7 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 		example_bundle_len_med = np.median(np.hstack(result_lap[:,0,2]))
 
 		print("Ranking the estimated streamlines...")
-		estimated_bundle_idx_ranked = ranking_schema(estimated_bundle_idx, min_cost_values)                                                       
+		estimated_bundle_idx_ranked = ranking_schema(estimated_bundle_idx, min_cost_values)                      
 
 		print("Extracting the estimated bundle...")
 		estimated_bundle_idx_ranked_med = estimated_bundle_idx_ranked[0:int(example_bundle_len_med)]

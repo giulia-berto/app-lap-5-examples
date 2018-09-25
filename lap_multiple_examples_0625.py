@@ -12,7 +12,7 @@ import nibabel as nib
 import numpy as np
 from nibabel.streamlines import load, save
 from tractograms_slr_0625 import tractograms_slr
-from lap_single_example_0625_anatomical import lap_single_example, save_bundle
+from lap_single_example_0625 import lap_single_example, save_bundle
 from dipy.tracking.utils import length
 
 

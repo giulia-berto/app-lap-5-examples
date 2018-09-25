@@ -114,13 +114,6 @@ def RLAP(kdt, k, dm_source_tract, source_tract, tractogram, distance):
     D, I = kdt.query(dm_source_tract, k=k)
     superset = np.unique(I.flat)
     np.save('superset_idx', superset)
-    with open('config.json') as f:
-        data = json.load(f)
-	if data["local_slr"] == True:
-	    print("Computing local SLR")
-	    local_affine = local_slr(source_tract, tractogram[superset])
-	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in source_tract])
-	    source_tract = source_tract_aligned
     print("Computing the cost matrix (%s x %s) for RLAP... " % (len(source_tract),
                                                              len(superset)))
     cost_matrix = dissimilarity(source_tract, tractogram[superset], distance)
@@ -156,14 +149,14 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	with open('config.json') as f:
             data = json.load(f)
 	    k = data["k"]
-	    ANTs = data["ANTs"]
+	    ANTs_LAP = data["ANTs_LAP"]
 	distance_func = bundles_distances_mam
 
 	example_bundle = nib.streamlines.load(example)
 	example_bundle = example_bundle.streamlines
 	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
 	
-	if ANTs == True:
+	if ANTs_LAP == True:
 		print("Data already aligned with ANTs")
 		example_bundle_aligned = example_bundle_res
 	else:

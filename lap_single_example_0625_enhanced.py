@@ -155,50 +155,9 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2):
 	print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
 
 	#normalize matrices
-	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
-	terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
-	anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
-
-	return distance_matrix, terminal_matrix, anatomical_matrix
-
-
-def compute_lap_matrices_ex(superset_idx, source_tract, tractogram, roi1, roi2, roi1_ex, roi2_ex):
-	"""Code for computing the inputs to the MODIFIED Rectangular Linear Assignment Problem.
-	"""
-	distance = bundles_distances_mam
-	tractogram = np.array(tractogram, dtype=np.object)
-
-	print("Computing the distance matrix (%s x %s) for RLAP with %s... " % (len(source_tract), len(superset_idx), distance))
-	t0=time.time()
-	distance_matrix = dissimilarity(source_tract, tractogram[superset_idx], distance)
-	print("Time for computing the distance matrix = %s seconds" %(time.time()-t0))
-	
-	print("Computing the terminal points matrix (%s x %s) for RLAP... " % (len(source_tract), len(superset_idx)))
-    	t1=time.time()
-    	terminal_matrix = bundles_distances_endpoints_fastest(source_tract, tractogram[superset_idx])
-    	print("Time for computing the terminal points matrix = %s seconds" %(time.time()-t1))
-
-	print("Computing the anatomical matrix (%s x %s) for RLAP... " % (len(source_tract), len(superset_idx)))
-	t2=time.time()
-	#superset
-	roi1_dist = bundle2roi_distance(tractogram[superset_idx], roi1)
-	roi2_dist = bundle2roi_distance(tractogram[superset_idx], roi2)
-	anatomical_vector = np.add(roi1_dist, roi2_dist)
-	#example
-	roi1_ex_dist = bundle2roi_distance(source_tract, roi1_ex)
-	roi2_ex_dist = bundle2roi_distance(source_tract, roi2_ex)
-	anatomical_ex_vector = np.add(roi1_ex_dist, roi2_ex_dist)
-	#subtraction
-	anatomical_matrix = np.zeros((len(source_tract), len(superset_idx)))
-	for i in range(len(source_tract)):
-		for j in range(len(superset_idx)):
-			anatomical_matrix[i,j] = np.abs(np.subtract(anatomical_ex_vector[i], anatomical_vector[j]))
-	print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
-
-	#normalize matrices
-	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
-	terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
-	anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
+	#distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
+	#terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
+	#anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
 
 	return distance_matrix, terminal_matrix, anatomical_matrix
 
@@ -269,8 +228,7 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	with open('config.json') as f:
             data = json.load(f)
 	    k = data["k"]
-	    ANTs = data["ANTs"]
-	    example2roi = data["example2roi"]
+	    ANTs_LAP = data["ANTs_LAP"]
 	distance_func = bundles_distances_mam
 
 	subjID = ntpath.basename(static_tractogram)[0:6]
@@ -310,14 +268,6 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	print("Computing superset with k = %s" %k)
 	superset_idx = compute_superset(example_bundle_aligned, kdt, prototypes, k=k)
 
-	with open('config.json') as f:
-            data = json.load(f)
-	if data["local_slr"] == True:
-	    print("Computing local SLR")
-	    local_affine = local_slr(example_bundle_aligned, static_tractogram[superset_idx])
-	    source_tract_aligned = np.array([apply_affine(local_affine, s) for s in example_bundle_aligned])
-	    example_bundle_aligned = source_tract_aligned
-
 	print("Loading the two-waypoint ROIs of the target...")
 	table_filename = 'ROIs_labels_dictionary.pickle'
 	table = pickle.load(open(table_filename))
@@ -328,30 +278,12 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	roi2_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi2_lab)
 	roi2 = nib.load(roi2_filename)
 	
-	if example2roi == True:
-		
-		print("Loading the two-waypoint ROIs of the example...")
-		roi1_ex_lab = table[tract_name].items()[0][1]
-		roi1_ex_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(exID, roi1_ex_lab)
-		roi1_ex = nib.load(roi1_ex_filename)
-		roi2_ex_lab = table[tract_name].items()[1][1]
-		roi2_ex_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(exID, roi2_ex_lab)
-		roi2_ex = nib.load(roi2_ex_filename)
-	
-		print("Segmentation as Rectangular linear Assignment Problem (RLAP).")
-		distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices_ex(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2, roi1_ex, roi2_ex)
+	distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2)
 
-	else:
-		print("Segmentation as Rectangular linear Assignment Problem (RLAP).")
-		distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2)
+	g = 1 
+	alpha = 1 
 
-	with open('config.json') as f:
-            data = json.load(f)
-	    g = data["g"]
-	    h = data["h"]
-	    alpha = data["alpha"]
-
-	print("Using alpha = %s" %alpha)
+	print("Using g = %s and alpha = %s" %(g,alpha))
 	estimated_bundle_idx, min_cost_values = RLAP_modified(distance_matrix, terminal_matrix, anatomical_matrix, superset_idx, g, alpha)
 
 	return estimated_bundle_idx, min_cost_values, len(example_bundle)
