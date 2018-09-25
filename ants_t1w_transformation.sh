@@ -35,4 +35,4 @@ antsRegistrationSyNQuick.sh -d 3 \
 
 mv ${T1W_ANT_PRE}1Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
 mv ${T1W_ANT_PRE}1InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
-mv ${T1W_ANT_PRE}0GenericAffine.mat ${T1W_ANT_PRE}affine.txt
+mv ${T1W_ANT_PRE}0GenericAffine.mat ${T1W_ANT_PRE}affine.mat
