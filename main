@@ -27,7 +27,7 @@ t1s=`jq -r '.t1s_moving' config.json`
 SLR_LAP=`jq -r '.SLR_LAP' config.json`
 ANTs_LAP=`jq -r '.ANTs_LAP' config.json`
 ANTs_LAPen=`jq -r '.ANTs_LAPen' config.json`
-#true_segmentation=`jq -r '.true_segmentation' config.json`
+true_segmentation=`jq -r '.true_segmentation' config.json`
 
 # Building arrays
 arr_seg=()
@@ -248,6 +248,21 @@ if [ ${ANTs_LAPen} == true ]; then
 
 	done < tract_name_list.txt
 
+fi
+
+
+# AFQ conversion and DSC computation
+echo "AFQ conversion of graound truth to trk"
+matlab -nosplash -nodisplay -r "afqConverter1()";
+
+echo "Computing voxel measures"
+python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
+
+ret=$?
+if [ ! $ret -eq 0 ]; then
+	echo "DSC computation failed"
+	echo $ret > finished
+	exit $ret
 fi
 
 echo "Complete"
