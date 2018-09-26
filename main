@@ -250,6 +250,7 @@ rm *.tck -f
 rm *.nii.gz -f
 rm -r tractograms_directory -f
 rm -r examples_directory* -f
+rm -r aligned_examples_directory* -f
 rm cost_matrix.npy -f
 rm superset_idx.npy -f
 rm kdt -f
