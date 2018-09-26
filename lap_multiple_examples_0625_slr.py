@@ -36,7 +36,7 @@ def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_targe
     return idxs[ranking]
 
 
-def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out_filename):
+def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out_filename, stat_id):
 	"""Code for LAP from multiple examples.
 	"""
 	moving_tractograms = os.listdir(moving_tractograms_dir)
@@ -55,7 +55,8 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 		for i in range(nt):
 			moving_tractogram = '%s/%s' %(moving_tractograms_dir, moving_tractograms[i])
 			example = '%s/%s' %(ex_dir, examples[i])
-			tmp = np.array([lap_single_example(moving_tractogram, static_tractogram, example)])
+			mov_id = moving_tractograms[i][0:6]
+			tmp = np.array([lap_single_example(moving_tractogram, static_tractogram, example, mov_id, stat_id)])
 			result_lap.append(tmp)
 
 		result_lap = np.array(result_lap)
@@ -86,11 +87,13 @@ if __name__ == '__main__':
 	parser.add_argument('-ex_dir', nargs='?',  const=1, default='',
 	                    help='The examples (moving) bundle directory')
 	parser.add_argument('-out', nargs='?',  const=1, default='default',
-	                    help='The output estimated bundle filename')                   
+	                    help='The output estimated bundle filename')    
+	parser.add_argument('-stat_id', nargs='?',  const=1, default='default',
+	                    help='Static subject id')                
 	args = parser.parse_args()
 
 	t0=time.time()
-	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out, args.stat_id)
 	print("Time for computing multiple-lap = %s seconds" %(time.time()-t0))
 
 	np.save('result_lap', result_lap)

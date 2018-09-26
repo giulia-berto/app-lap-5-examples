@@ -143,7 +143,7 @@ def show_tracts(estimated_target_tract, target_tract):
 	fvtk.clear(ren)
 
 
-def lap_single_example(moving_tractogram, static_tractogram, example):
+def lap_single_example(moving_tractogram, static_tractogram, example, mov_id, stat_id):
 	"""Code for LAP from a single example.
 	"""
 	with open('config.json') as f:
@@ -156,7 +156,7 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
 	
 	print("Computing the affine slr transformation.")
-	affine = tractograms_slr(moving_tractogram, static_tractogram)
+	affine = np.load('m%s_s%s_affine.npy' %(mov_id, stat_id))
 	print("Applying the affine to the example bundle.")
 	example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
 	

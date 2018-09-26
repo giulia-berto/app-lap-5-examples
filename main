@@ -135,8 +135,8 @@ do
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
-	echo "Coregistering ROIs on the moving subject space"
-	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
+	#echo "Coregistering ROIs on the moving subject space"
+	#./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
 
 done
 echo "Waiting for ANTs registration and ROIs coregistration to finish"
@@ -145,6 +145,20 @@ echo "ANTs registration and ROIs coregistration done."
 
 echo "Coregistering ROIs on the target subject space"
 ./mni_roi_registration.sh ${subjID} ${t1_static} AFQ
+
+
+if [ ${SLR_LAP} == true ]; then
+echo "SLR registration";
+	
+	for i in `seq 1 $num_ex`; 
+	do	
+		id_mov=$(jq -r "._inputs[1+$i+$num_ex].meta.subject" config.json | tr -d "_")
+		python tractograms_slr_0625_easy.py -mov_id ${id_mov} -moving tractograms_directory/${id_mov}_track.trk -stat_id ${subjID} -static tractogram_static.trk &
+	done
+	echo "Waiting for SLR registration to finish..."
+	wait
+	echo "SLR registration done." 
+fi
 
 
 echo "Running LAP"
@@ -162,7 +176,7 @@ if [ ${SLR_LAP} == true ]; then
 		base_name=$tract_name'_tract'
 		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
 		array_filename='result_lap'
-		python lap_multiple_examples_0625_slr.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename;
+		python lap_multiple_examples_0625_slr.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -out $output_filename -stat_id ${subjID};
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 		
