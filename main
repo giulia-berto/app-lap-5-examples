@@ -185,7 +185,7 @@ if [ ${ANTs_LAP} == true ]; then
 	while read tract_name; do
 		echo "Tract name: $tract_name"; 
 		base_name=$tract_name'_tract'
-		output_filename=tracts_tck/${subjID}_$base_name_$run.tck
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
 		array_filename='result_lap'
 		python lap_multiple_examples_0625_ants.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
 
