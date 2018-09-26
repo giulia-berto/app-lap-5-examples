@@ -22,7 +22,7 @@ WARP_T1W=sub-${SUB_MOVE}_space_${SUB_STAT}_var-t1w4tck_warp.nii.gz
 
 T1W_ANT_PRE=sub-${SUB_MOVE}_space_${SUB_STAT}_var-t1w_
 
-T1W_AFF=${T1W_ANT_PRE}affine.mat
+T1W_AFF=${T1W_ANT_PRE}affine.txt
 T1W_IWARP=${T1W_ANT_PRE}invwarp.nii.gz
 T1W_IWARP_FIX=${T1W_ANT_PRE}InverseWarp.nii.gz
 

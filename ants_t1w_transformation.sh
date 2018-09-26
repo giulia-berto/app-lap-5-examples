@@ -22,17 +22,21 @@ T1W_ANT_PRE=sub-${SUB_MOVE}_space_${SUB_STAT}_var-t1w_
 #------------------------------------------------------------------------------
 
 # Warp Computation
-#ANTS 3 -m CC[${T1W_STAT},${T1W_MOVE},1,5] -t SyN[0.5] \
-#    -r Gauss[2,0] -o $T1W_ANT_PRE -i 30x90x20 --use-Histogram-Matching
+ANTS 3 -m CC[${T1W_STAT},${T1W_MOVE},1,5] -t SyN[0.5] \
+    -r Gauss[2,0] -o $T1W_ANT_PRE -i 30x90x20 --use-Histogram-Matching
 
-antsRegistrationSyNQuick.sh -d 3 \
-     -f $T1W_STAT -m $T1W_MOVE -t s -o $T1W_ANT_PRE
+#antsRegistrationSyNQuick.sh -d 3 \
+#     -f $T1W_STAT -m $T1W_MOVE -t s -o $T1W_ANT_PRE
 
 
 #------------------------------------------------------------------------------
 # ANTS Registration of structural images
 #------------------------------------------------------------------------------
 
-mv ${T1W_ANT_PRE}1Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
-mv ${T1W_ANT_PRE}1InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
-mv ${T1W_ANT_PRE}0GenericAffine.mat ${T1W_ANT_PRE}affine.mat
+mv ${T1W_ANT_PRE}Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
+mv ${T1W_ANT_PRE}InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
+mv ${T1W_ANT_PRE}Affine.txt ${T1W_ANT_PRE}affine.txt
+
+#mv ${T1W_ANT_PRE}1Warp.nii.gz ${T1W_ANT_PRE}warp.nii.gz
+#mv ${T1W_ANT_PRE}1InverseWarp.nii.gz ${T1W_ANT_PRE}invwarp.nii.gz
+#mv ${T1W_ANT_PRE}0GenericAffine.mat ${T1W_ANT_PRE}affine.mat
