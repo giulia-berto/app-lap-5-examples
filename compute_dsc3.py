@@ -114,6 +114,6 @@ if __name__ == '__main__':
 		with open(results, "a") as myfile:
 			myfile.write("%0.3f\t%0.3f\t%0.3f\t%0.3f\t%s\t%s\n" %(DSC, wDSC, J, sensitivity, vol_A, vol_B))
 	
-	np.save('sub-%s_results_%s.txt' %(args.sub, tract_name), results_matrix)
+	np.save('sub-%s_results_%s' %(args.sub, tract_name), results_matrix)
 
 sys.exit()
