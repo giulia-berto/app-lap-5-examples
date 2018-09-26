@@ -10,6 +10,7 @@ import argparse
 import os.path
 import nibabel as nib
 import numpy as np
+import time
 from nibabel.streamlines import load, save
 from tractograms_slr_0625 import tractograms_slr
 from lap_single_example_0625_enhanced import lap_single_example, save_bundle
@@ -88,7 +89,9 @@ if __name__ == '__main__':
 	                    help='The output estimated bundle filename')                   
 	args = parser.parse_args()
 
+	t0=time.time()
 	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+	print("Time for computing multiple-lap = %s seconds" %(time.time()-t0))
 
 	np.save('result_lap', result_lap)
 

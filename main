@@ -224,8 +224,6 @@ if [ ${ANTs_LAPen} == true ]; then
 			exit $ret
 		fi
 
-		cp tracts_tck sub-${subjID}_tracts_tck_${tract_name}
-
 	done < tract_name_list.txt
 
 fi
