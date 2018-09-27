@@ -137,8 +137,8 @@ do
 		./ants_t1w_registration.sh ${id_mov} ${t1_moving} ${subjID} ${t1_static} &
 	fi
 
-	echo "Coregistering ROIs on the moving subject space"
-	./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
+	#echo "Coregistering ROIs on the moving subject space"
+	#./mni_roi_registration.sh ${id_mov} ${t1_moving} AFQ &
 
 done
 echo "Waiting for ANTs registration and ROIs coregistration to finish"
