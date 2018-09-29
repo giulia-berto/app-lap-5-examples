@@ -170,6 +170,8 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, sub
 def RLAP_modified(distance_matrix, terminal_matrix, anatomical_matrix, superset_idx, g, alpha):
     """Code for MODIFIED Rectangular Linear Assignment Problem.
     """
+    g = np.asarray(g, dtype='float64')
+    alpha = np.asarray(alpha, dtype='float64')
     print("Computing cost matrix.")
     cost_matrix = distance_matrix + g * terminal_matrix + alpha * anatomical_matrix
     print("Computing RLAP with LAPJV...")
@@ -230,6 +232,8 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 def lap_single_example(moving_tractogram, static_tractogram, example, g, alpha):
 	"""Code for LAP from a single example.
 	"""
+	np.random.seed(0)
+
 	with open('config.json') as f:
             data = json.load(f)
 	    k = data["k"]
