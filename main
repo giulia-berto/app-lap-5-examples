@@ -208,6 +208,8 @@ fi
 if [ ${ANTs_LAPen} == true ]; then
 
 	run=ANTs_LAPen
+	g=1
+	alpha=1
 	echo "Running LAP multi example ANTs_LAPen"
 	
 	while read tract_name; do
@@ -215,7 +217,63 @@ if [ ${ANTs_LAPen} == true ]; then
 		base_name=$tract_name'_tract'
 		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
 		array_filename='result_lap'
-		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -out $output_filename;
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+	done < tract_name_list.txt
+
+fi
+
+
+if [ ${ANTs_LAPterm} == true ]; then
+
+	run=ANTs_LAPterm
+	g=1
+	alpha=0
+	echo "Running LAP multi example ANTs_LAPterm"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+	done < tract_name_list.txt
+
+fi
+
+
+if [ ${ANTs_LAPanat} == true ]; then
+
+	run=ANTs_LAPanat
+	g=0
+	alpha=1
+	echo "Running LAP multi example ANTs_LAPanat"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir aligned_examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
 
 		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
 		
@@ -236,7 +294,7 @@ echo "AFQ conversion of graound truth to trk"
 matlab -nosplash -nodisplay -r "afqConverter1()";
 
 echo "Computing voxel measures"
-python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
+python compute_dsc5.py -sub $subjID -list 'tract_name_list.txt';
 
 ret=$?
 if [ ! $ret -eq 0 ]; then
@@ -258,5 +316,6 @@ rm superset_idx.npy -f
 rm kdt -f
 rm prototypes.npy -f
 rm -r aligned_ROIs -f
+rm -r templates -f
 
 echo "Complete"

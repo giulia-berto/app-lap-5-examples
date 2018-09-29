@@ -36,7 +36,7 @@ def ranking_schema(superset_estimated_target_tract_idx, superset_estimated_targe
     return idxs[ranking]
 
 
-def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out_filename):
+def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, g, alpha, out_filename):
 	"""Code for LAP from multiple examples.
 	"""
 	moving_tractograms = os.listdir(moving_tractograms_dir)
@@ -55,7 +55,7 @@ def lap_multiple_examples(moving_tractograms_dir, static_tractogram, ex_dir, out
 		for i in range(nt):
 			moving_tractogram = '%s/%s' %(moving_tractograms_dir, moving_tractograms[i])
 			example = '%s/%s' %(ex_dir, examples[i])
-			tmp = np.array([lap_single_example(moving_tractogram, static_tractogram, example)])
+			tmp = np.array([lap_single_example(moving_tractogram, static_tractogram, example, g, alpha)])
 			result_lap.append(tmp)
 
 		result_lap = np.array(result_lap)
@@ -85,12 +85,16 @@ if __name__ == '__main__':
 	                    help='The static tractogram filename')
 	parser.add_argument('-ex_dir', nargs='?',  const=1, default='',
 	                    help='The examples (moving) bundle directory')
+	parser.add_argument('-g', nargs='?',  const=1, default='',
+	                    help='Weight of the endpoint matrix')
+	parser.add_argument('-alpha', nargs='?',  const=1, default='',
+	                    help='Weight of the waypoint matrix')
 	parser.add_argument('-out', nargs='?',  const=1, default='default',
 	                    help='The output estimated bundle filename')                   
 	args = parser.parse_args()
 
 	t0=time.time()
-	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.out)
+	result_lap = lap_multiple_examples(args.moving_dir, args.static, args.ex_dir, args.g, args.alpha, args.out)
 	print("Time for computing multiple-lap = %s seconds" %(time.time()-t0))
 
 	np.save('result_lap', result_lap)

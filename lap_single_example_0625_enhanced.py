@@ -128,16 +128,21 @@ def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
     return kdt, prototypes    
 
 
-def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2):
+def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, subjID, exID):
 	"""Code for computing the inputs to the MODIFIED Rectangular Linear Assignment Problem.
 	"""
 	distance = bundles_distances_mam
 	tractogram = np.array(tractogram, dtype=np.object)
 
-	print("Computing the distance matrix (%s x %s) for RLAP with %s... " % (len(source_tract), len(superset_idx), distance))
-	t0=time.time()
-	distance_matrix = dissimilarity(source_tract, tractogram[superset_idx], distance)
-	print("Time for computing the distance matrix = %s seconds" %(time.time()-t0))
+	if isfile('distance_matrix_m%s_s%s.npy' %(exID, subjID)):
+		print("Retrieving distance matrix for example %s and target %s." %(exID, subjID))
+		distance_matrix = np.load('distance_matrix_m%s_s%s.npy' %(exID, subjID))
+	else:
+		print("Computing the distance matrix (%s x %s) for RLAP with %s... " % (len(source_tract), len(superset_idx), distance))
+		t0=time.time()
+		distance_matrix = dissimilarity(source_tract, tractogram[superset_idx], distance)
+		np.save('distance_matrix_m%s_s%s.npy' %(exID, subjID), distance_matrix)
+		print("Time for computing the distance matrix = %s seconds" %(time.time()-t0))
 	
 	print("Computing the terminal points matrix (%s x %s) for RLAP... " % (len(source_tract), len(superset_idx)))
     	t1=time.time()
@@ -222,7 +227,7 @@ def save_bundle(estimated_bundle_idx, static_tractogram, out_filename):
 		print("%s format not supported." % extension)
 
 
-def lap_single_example(moving_tractogram, static_tractogram, example):
+def lap_single_example(moving_tractogram, static_tractogram, example, g, alpha):
 	"""Code for LAP from a single example.
 	"""
 	with open('config.json') as f:
@@ -271,10 +276,10 @@ def lap_single_example(moving_tractogram, static_tractogram, example):
 	roi2_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi2_lab)
 	roi2 = nib.load(roi2_filename)
 	
-	distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2)
+	distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2, subjID, exID)
 
-	g = 1 
-	alpha = 1 
+	#g = 1 
+	#alpha = 1 
 
 	print("Using g = %s and alpha = %s" %(g,alpha))
 	estimated_bundle_idx, min_cost_values = RLAP_modified(distance_matrix, terminal_matrix, anatomical_matrix, superset_idx, g, alpha)
@@ -294,11 +299,15 @@ if __name__ == '__main__':
 	                    help='The static tractogram filename')
 	parser.add_argument('-ex', nargs='?',  const=1, default='',
 	                    help='The example (moving) bundle filename')  
+	parser.add_argument('-g', nargs='?',  const=1, default='',
+	                    help='Weight of the endpoint matrix')
+	parser.add_argument('-alpha', nargs='?',  const=1, default='',
+	                    help='Weight of the waypoint matrix')
 	parser.add_argument('-out', nargs='?',  const=1, default='',
 	                    help='The output estimated bundle filename')                               
 	args = parser.parse_args()
 
-	result_lap = lap_single_example(args.moving, args.static, args.ex)
+	result_lap = lap_single_example(args.moving, args.static, args.ex, args.g, args.alpha)
 
 	np.save('result_lap', result_lap)
 
