@@ -31,9 +31,9 @@ ANTs_LAP=`jq -r '.ANTs_LAP' config.json`
 ANTs_LAPen=`jq -r '.ANTs_LAPen' config.json`
 ANTs_LAPterm=`jq -r '.ANTs_LAPterm' config.json`
 ANTs_LAPanat=`jq -r '.ANTs_LAPanat' config.json`
-SLR_LAPen=`jq -r '.ANTs_LAPen' config.json`
-SLR_LAPterm=`jq -r '.ANTs_LAPterm' config.json`
-SLR_LAPanat=`jq -r '.ANTs_LAPanat' config.json`
+SLR_LAPen=`jq -r '.SLR_LAPen' config.json`
+SLR_LAPterm=`jq -r '.SLR_LAPterm' config.json`
+SLR_LAPanat=`jq -r '.SLR_LAPanat' config.json`
 true_segmentation=`jq -r '.true_segmentation' config.json`
 
 # Building arrays
