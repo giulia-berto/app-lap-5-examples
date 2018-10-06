@@ -359,7 +359,7 @@ fi
 
 if [ ${SLR_LAPanat} == true ]; then
 
-	run=SLT_LAPanat
+	run=SLR_LAPanat
 	g=0
 	alpha=1
 	echo "Running LAP multi example SLR_LAPanat"
