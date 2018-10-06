@@ -164,7 +164,7 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, sub
 		roi1_ex_dist = bundle2roi_distance(source_tract, roi1)
 		roi2_ex_dist = bundle2roi_distance(source_tract, roi2)
 		anatomical_ex_vector = np.add(roi1_ex_dist, roi2_ex_dist)
-		print(anatomical_ex_vector)
+		#print(anatomical_ex_vector)
 		#subtraction
 		for i in range(len(source_tract)):
 			for j in range(len(superset_idx)):
