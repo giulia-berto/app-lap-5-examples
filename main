@@ -291,12 +291,103 @@ if [ ${ANTs_LAPanat} == true ]; then
 fi
 
 
+#removing distance matrices computed with ANTs and aligned examples
+rm distance* -f
+rm -r aligned_examples_directory* -f
+echo "Distance matrices computed with ANTs removed."
+cp /N/dc2/projects/lifebid/giulia/data/HCP3-VWM-indiana/derivatives/slr-transformation/sub-${subjID}/affine_dictionary.pickle ./affine_dictionary.pickle
+
+
+if [ ${SLR_LAPen} == true ]; then
+
+	run=SLR_LAPen
+	g=1
+	alpha=1
+	echo "Running LAP multi example SLR_LAPen"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+	done < tract_name_list.txt
+
+fi
+
+
+if [ ${SLR_LAPterm} == true ]; then
+
+	run=SLR_LAPterm
+	g=1
+	alpha=0
+	echo "Running LAP multi example SLR_LAPterm"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+	done < tract_name_list.txt
+
+fi
+
+
+if [ ${SLR_LAPanat} == true ]; then
+
+	run=SLT_LAPanat
+	g=0
+	alpha=1
+	echo "Running LAP multi example SLR_LAPanat"
+	
+	while read tract_name; do
+		echo "Tract name: $tract_name"; 
+		base_name=$tract_name'_tract'
+		output_filename=tracts_tck/${subjID}_${base_name}_${run}.tck
+		array_filename='result_lap'
+		python lap_multiple_examples_0625_enhanced.py -moving_dir tractograms_directory -static $subjID'_track.trk' -ex_dir examples_directory_$tract_name -g $g -alpha $alpha -out $output_filename;
+
+		mv result_lap.npy ./results_lap/${subjID}'_'${base_name/tract/$array_filename}'_'$run'.npy'
+		
+		ret=$?
+		if [ ! $ret -eq 0 ]; then
+			echo "LAP single example failed"
+			echo $ret > finished
+			exit $ret
+		fi
+
+	done < tract_name_list.txt
+
+fi
+
+
 # AFQ conversion and DSC computation
 echo "AFQ conversion of graound truth to trk"
 matlab -nosplash -nodisplay -r "afqConverter1()";
 
 echo "Computing voxel measures"
-python compute_dsc5.py -sub $subjID -list 'tract_name_list.txt';
+python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
 
 ret=$?
 if [ ! $ret -eq 0 ]; then
@@ -312,11 +403,9 @@ rm *.tck -f
 rm *.nii.gz -f
 rm -r tractograms_directory -f
 rm -r examples_directory* -f
-rm -r aligned_examples_directory* -f
 rm kdt -f
 rm prototypes.npy -f
 rm -r aligned_ROIs -f
 rm -r templates -f
-rm distance* -f
 
 echo "Complete"

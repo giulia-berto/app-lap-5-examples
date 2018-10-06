@@ -89,7 +89,9 @@ if __name__ == '__main__':
 	tract_name = content[0]
 	results_matrix = np.zeros((3, 6))
 	step_size = 0.625
-	run_list = ['SLR_LAP', 'ANTs_LAP', 'ANTs_LAPen']
+	#run_list = ['SLR_LAP', 'ANTs_LAP', 'ANTs_LAPen']
+	run_list = ['SLR_LAPen', 'SLR_LAPterm', 'SLR_LAPanat']
+	run = 'slr'
 
 	#Write results on a file
 	results = 'sub-%s_results_%s.txt' %(args.sub, tract_name)
@@ -114,6 +116,6 @@ if __name__ == '__main__':
 		with open(results, "a") as myfile:
 			myfile.write("%0.3f\t%0.3f\t%0.3f\t%0.3f\t%s\t%s\n" %(DSC, wDSC, J, sensitivity, vol_A, vol_B))
 	
-	np.save('sub-%s_results_%s' %(args.sub, tract_name), results_matrix)
+	np.save('sub-%s_results_%s_%s' %(args.sub, run, tract_name), results_matrix)
 
 sys.exit()

@@ -131,9 +131,12 @@ def compute_kdtree_and_dr_tractogram(tractogram, num_prototypes=None):
 def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, subjID, exID):
 	"""Code for computing the inputs to the MODIFIED Rectangular Linear Assignment Problem.
 	"""
+	with open('config.json') as f:
+            data = json.load(f)
+	    example2roi = data["example2roi"]
 	distance = bundles_distances_mam
 	tractogram = np.array(tractogram, dtype=np.object)
-
+	
 	if isfile('distance_matrix_m%s_s%s.npy' %(exID, subjID)):
 		print("Retrieving distance matrix for example %s and target %s." %(exID, subjID))
 		distance_matrix = np.load('distance_matrix_m%s_s%s.npy' %(exID, subjID))
@@ -155,9 +158,24 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, sub
 	roi2_dist = bundle2roi_distance(tractogram[superset_idx], roi2)
 	anatomical_vector = np.add(roi1_dist, roi2_dist)
 	anatomical_matrix = np.zeros((len(source_tract), len(superset_idx)))
-	for i in range(len(source_tract)):
-		anatomical_matrix[i] = anatomical_vector
-	print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
+
+	if example2roi == True:
+		print("Using also example2roi...")
+		roi1_ex_dist = bundle2roi_distance(source_tract, roi1)
+		roi2_ex_dist = bundle2roi_distance(source_tract, roi2)
+		anatomical_ex_vector = np.add(roi1_ex_dist, roi2_ex_dist)
+		print(anatomical_ex_vector)
+		#subtraction
+		for i in range(len(source_tract)):
+			for j in range(len(superset_idx)):
+				anatomical_matrix[i,j] = np.abs(np.subtract(anatomical_ex_vector[i], anatomical_vector[j]))
+		print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
+
+	else:
+		print("NOT using example2roi...")
+		for i in range(len(source_tract)):
+			anatomical_matrix[i] = anatomical_vector
+		print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
 
 	#normalize matrices
 	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
@@ -247,8 +265,14 @@ def lap_single_example(moving_tractogram, static_tractogram, example, g, alpha):
 	example_bundle = example_bundle.streamlines
 	example_bundle_res = resample_tractogram(example_bundle, step_size=0.625)
 	
-	print("Data already aligned with ANTs")
-	example_bundle_aligned = example_bundle_res
+	if os.path.exists('aligned_examples_directory_%s' %tract_name):
+		print("Data already aligned with ANTs")
+		example_bundle_aligned = example_bundle_res
+	else:
+		print("Computing the affine slr transformation.")
+		affine = tractograms_slr(moving_tractogram, static_tractogram)
+		print("Applying the affine to the example bundle.")
+		example_bundle_aligned = np.array([apply_affine(affine, s) for s in example_bundle_res])
 	
 	print("Compute the dissimilarity representation of the target tractogram and build the kd-tree.")
 	static_tractogram = nib.streamlines.load(static_tractogram)
@@ -280,10 +304,8 @@ def lap_single_example(moving_tractogram, static_tractogram, example, g, alpha):
 	roi2_filename = 'aligned_ROIs/sub-%s_var-AFQ_lab-%s_roi.nii.gz' %(subjID, roi2_lab)
 	roi2 = nib.load(roi2_filename)
 	
+	print("Computing matrices for LAP...")
 	distance_matrix, terminal_matrix, anatomical_matrix = compute_lap_matrices(superset_idx, example_bundle_aligned, static_tractogram, roi1, roi2, subjID, exID)
-
-	#g = 1 
-	#alpha = 1 
 
 	print("Using g = %s and alpha = %s" %(g,alpha))
 	estimated_bundle_idx, min_cost_values = RLAP_modified(distance_matrix, terminal_matrix, anatomical_matrix, superset_idx, g, alpha)
