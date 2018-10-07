@@ -178,9 +178,9 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, sub
 		print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
 
 	#normalize matrices
-	#distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
-	#terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
-	#anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
+	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
+	terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
+	anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
 
 	print(distance_matrix)
 	print(terminal_matrix)
