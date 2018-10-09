@@ -177,19 +177,19 @@ def compute_lap_matrices(superset_idx, source_tract, tractogram, roi1, roi2, sub
 			anatomical_matrix[i] = anatomical_vector
 		print("Time for computing the anatomical matrix = %s seconds" %(time.time()-t2))
 
-	#normalize matrices
-	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
-	terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
-	anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
-	#terminal_matrix = terminal_matrix * 0.5
-	#anatomical_matrix = anatomical_matrix * 0.5	
-
 	print("min distance matrix : %s" %np.min(distance_matrix))
 	print("max distance matrix : %s" %np.max(distance_matrix))
 	print("min terminal matrix : %s" %np.min(terminal_matrix))
 	print("max terminal matrix : %s" %np.max(terminal_matrix))
 	print("min anatomical matrix : %s" %np.min(anatomical_matrix))
 	print("max anatomical matrix : %s" %np.max(anatomical_matrix))
+
+	#normalize matrices
+	distance_matrix = (distance_matrix-np.min(distance_matrix))/(np.max(distance_matrix)-np.min(distance_matrix))
+	terminal_matrix = (terminal_matrix-np.min(terminal_matrix))/(np.max(terminal_matrix)-np.min(terminal_matrix))
+	anatomical_matrix = (anatomical_matrix-np.min(anatomical_matrix))/(np.max(anatomical_matrix)-np.min(anatomical_matrix))
+	#terminal_matrix = terminal_matrix * 0.5
+	#anatomical_matrix = anatomical_matrix * 0.5	
 
 	return distance_matrix, terminal_matrix, anatomical_matrix
 
