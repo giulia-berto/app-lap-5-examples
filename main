@@ -390,7 +390,7 @@ echo "AFQ conversion of ground truth to trk"
 matlab -nosplash -nodisplay -r "afqConverter1()";
 
 echo "Computing voxel measures"
-python compute_dsc5.py -sub $subjID -list 'tract_name_list.txt';
+python compute_dsc3.py -sub $subjID -list 'tract_name_list.txt';
 
 ret=$?
 if [ ! $ret -eq 0 ]; then
