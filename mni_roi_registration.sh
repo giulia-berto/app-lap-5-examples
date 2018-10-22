@@ -2,7 +2,7 @@
 
 SUB_STAT=$1
 T1W_STAT=$2
-MNI=templates/MNI_T1.nii.gz
+MNI=templates/MNI152_T1_2mm_brain.nii.gz
 
 if [ ! -z $3 ]; then
 	RUN=$3
@@ -46,7 +46,7 @@ ANT_BIN=$ANTSPATH
 ANT_PRE=${OUT}/sub-${SUB_STAT}_var-ant_
 ANT_WARP=${ANT_PRE}1Warp.nii.gz 
 ANT_AFF=${ANT_PRE}0GenericAffine.mat
-T1W=t1w_crop.nii.gz
+T1W=t1w_brain.nii.gz
 
 #------------------------------------------------------------------------------
 # ROI Registration from MNI JUH
