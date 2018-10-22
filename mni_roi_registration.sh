@@ -2,7 +2,7 @@
 
 SUB_STAT=$1
 T1W_STAT=$2
-MNI=templates/MNI152_T1_2mm_brain.nii.gz
+MNI=templates/MNI_JHU_T2.nii.gz
 
 if [ ! -z $3 ]; then
 	RUN=$3
