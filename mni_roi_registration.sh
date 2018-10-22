@@ -2,7 +2,7 @@
 
 SUB_STAT=$1
 T1W_STAT=$2
-MNI=templates/MNI_JHU_T2.nii.gz
+MNI=templates/MNI_T1.nii.gz
 
 if [ ! -z $3 ]; then
 	RUN=$3
@@ -46,17 +46,20 @@ ANT_BIN=$ANTSPATH
 ANT_PRE=${OUT}/sub-${SUB_STAT}_var-ant_
 ANT_WARP=${ANT_PRE}1Warp.nii.gz 
 ANT_AFF=${ANT_PRE}0GenericAffine.mat
-
+T1W=t1w_crop.nii.gz
 
 #------------------------------------------------------------------------------
 # ROI Registration from MNI JUH
 #------------------------------------------------------------------------------
 
+# Brain extraction 
+bet $T1W_STAT $T1W
+
 # Warp Computation
 echo "Computing the warp..."
 if [ ! -f ${ANT_PRE}1Warp.nii.gz ]; then
     ${ANT_BIN}/antsRegistrationSyNQuick.sh -d 3 \
-	-f $T1W_STAT -m $MNI -t s -o $ANT_PRE
+	-f $T1W -m $MNI -t s -o $ANT_PRE
 fi
 
 # ROI Warping
